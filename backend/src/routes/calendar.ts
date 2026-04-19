@@ -80,22 +80,39 @@ calendarRouter.post("/sync", async (req, res, next) => {
     const accessToken = await getValidAccessToken(req.auth!.userId);
     const outlookEvents = await fetchOutlookCalendarEvents(accessToken);
 
+    // Batch-fetch existing outlook event ids to avoid N+1 queries
+    const outlookIds = outlookEvents.map((e) => e.id);
+    const existingEvents = await prisma.event.findMany({
+      where: { outlookEventId: { in: outlookIds } },
+      select: { outlookEventId: true },
+    });
+    const existingIds = new Set(existingEvents.map((e) => e.outlookEventId));
+
     const created = [];
-    const skipped = [];
+    const skipped: string[] = [];
 
     for (const evt of outlookEvents) {
-      // Deduplicate by Graph event id
-      const existing = await prisma.event.findUnique({
-        where: { outlookEventId: evt.id },
-      });
-      if (existing) {
-        skipped.push(existing.id);
+      if (existingIds.has(evt.id)) {
+        skipped.push(evt.id);
         continue;
       }
 
-      // Parse start/end — Graph returns { dateTime, timeZone }
-      const startTime = new Date(evt.start.dateTime + "Z");
-      const endTime = new Date(evt.end.dateTime + "Z");
+      // Parse start/end — Graph returns { dateTime, timeZone }.
+      // When timeZone is UTC, dateTime has no trailing "Z", so we append it.
+      // For other timezones the dateTime is local; we still parse as-is
+      // (the Date constructor handles ISO-8601 strings correctly).
+      const startRaw = evt.start.dateTime;
+      const startTime = new Date(
+        evt.start.timeZone === "UTC" && !startRaw.endsWith("Z")
+          ? startRaw + "Z"
+          : startRaw,
+      );
+      const endRaw = evt.end.dateTime;
+      const endTime = new Date(
+        evt.end.timeZone === "UTC" && !endRaw.endsWith("Z")
+          ? endRaw + "Z"
+          : endRaw,
+      );
 
       const event = await prisma.event.create({
         data: {
