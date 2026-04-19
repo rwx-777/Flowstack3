@@ -13,6 +13,17 @@ import { loginSchema } from '@/lib/validation';
 
 type FieldErrors = Partial<Record<'email' | 'password', string>>;
 
+function MicrosoftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 21 21" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const t = useTranslations('auth.login');
   const tErr = useTranslations('auth.errors');
@@ -89,6 +100,24 @@ export default function LoginPage() {
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-ink">{t('title')}</h2>
               <p className="mt-1 text-sm text-ink-muted">{t('subtitle')}</p>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => signIn('azure-ad', { callbackUrl })}
+            >
+              <MicrosoftIcon />
+              {t('ssoM365')}
+            </Button>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-surface px-3 text-xs text-ink-muted">{t('ssoSeparator')}</span>
+              </div>
             </div>
 
             <form onSubmit={onSubmit} noValidate className="space-y-4">
