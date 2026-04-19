@@ -39,7 +39,7 @@ export default function CalendarPage() {
   });
 
   const weekLabel = useMemo(() => {
-    if (weekOffset === 0) return t('today').replace('Today', 'Diese Woche').replace('Heute', 'Diese Woche');
+    if (weekOffset === 0) return t('thisWeek');
     return formatWeekLabel(weekOffset);
   }, [weekOffset, t]);
 
@@ -72,7 +72,7 @@ export default function CalendarPage() {
               onClick={() => setWeekOffset(0)}
               className="min-w-[220px] rounded-lg border border-border bg-surface px-4 py-2 text-center text-sm font-semibold text-ink transition-colors hover:bg-surface-muted"
             >
-              {weekOffset === 0 ? 'Diese Woche' : weekLabel}
+              {weekOffset === 0 ? t('thisWeek') : weekLabel}
             </button>
             <button
               onClick={() => setWeekOffset((o) => o + 1)}

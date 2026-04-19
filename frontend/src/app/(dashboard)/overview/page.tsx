@@ -43,6 +43,7 @@ const TIME_RANGES = [
 
 export default function OverviewPage() {
   const t = useTranslations('overview');
+  const tCal = useTranslations('calendar');
   const [selectedRange, setSelectedRange] = useState(0);
   const [calWeekOffset, setCalWeekOffset] = useState(0);
 
@@ -162,7 +163,7 @@ export default function OverviewPage() {
                   onClick={() => setCalWeekOffset(0)}
                   className="min-w-[200px] rounded-lg border border-border bg-surface px-4 py-1.5 text-center text-xs font-semibold text-ink transition-colors hover:bg-surface-muted"
                 >
-                  {calWeekOffset === 0 ? 'Diese Woche' : (() => {
+                  {calWeekOffset === 0 ? tCal('thisWeek') : (() => {
                     const now = new Date();
                     const start = new Date(now);
                     start.setDate(start.getDate() + calWeekOffset * 7);

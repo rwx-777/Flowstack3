@@ -103,6 +103,7 @@
     "subtitle": "Meetings, deadlines and reviews for the next two weeks",
     "kind": { "meeting": "Meeting", "deadline": "Deadline", "review": "Review", "protocol": "Protocol" },
     "today": "Today",
+    "thisWeek": "This week",
     "noEvents": "No events scheduled.",
     "linkedWorkflow": "Linked workflow",
     "sync": "Sync Outlook",

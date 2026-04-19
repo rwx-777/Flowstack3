@@ -124,6 +124,7 @@
       "protocol": "Protokoll"
     },
     "today": "Heute",
+    "thisWeek": "Diese Woche",
     "noEvents": "Keine Termine geplant.",
     "linkedWorkflow": "Verknüpfter Workflow",
     "sync": "Outlook synchronisieren",
