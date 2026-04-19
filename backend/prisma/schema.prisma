@@ -17,7 +17,10 @@ model Tenant {
   emails    Email[]
   tasks     Task[]
   events    Event[]
+  workflows Workflow[]
+  executions WorkflowExecution[]
 }
+
 
 model User {
   id                   String   @id @default(uuid())
@@ -88,6 +91,8 @@ model Event {
   title           String
   startTime       DateTime
   endTime         DateTime
+  location        String?
+  outlookEventId  String?    @unique
   createdByUserId String
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -114,4 +119,46 @@ model Reminder {
   createdAt  DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Workflow {
+  id             String   @id @default(uuid())
+  tenantId       String
+  slug           String
+  name           String
+  category       String
+  description    String
+  triggerType     String
+  nodeCount      Int      @default(0)
+  connectionCount Int     @default(0)
+  active         Boolean  @default(true)
+  successRate    Float    @default(1.0)
+  avgDurationMs  Float    @default(0)
+  lastRunAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  executions WorkflowExecution[]
+
+  @@unique([slug, tenantId])
+}
+
+model WorkflowExecution {
+  id            String    @id @default(uuid())
+  tenantId      String
+  workflowId    String
+  workflowSlug  String
+  workflowName  String
+  status        String
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  durationMs    Float?
+  triggeredBy   String
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 }

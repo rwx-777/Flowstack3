@@ -30,8 +30,8 @@ async function fetchEvents(days: number): Promise<readonly CalendarEvent[]> {
   const { data } = await axios.get('/api/calendar/events', { params: { days } });
   return eventsResponse.parse(data).events;
 }
-async function fetchMetrics(): Promise<Metrics> {
-  const { data } = await axios.get('/api/metrics');
+async function fetchMetrics(range: string): Promise<Metrics> {
+  const { data } = await axios.get('/api/metrics', { params: { range } });
   return metricsSchema.parse(data);
 }
 
@@ -53,6 +53,6 @@ export function useCalendarEvents(days = 14) {
     staleTime: 60_000,
   });
 }
-export function useMetrics() {
-  return useQuery({ queryKey: ['metrics'], queryFn: fetchMetrics, staleTime: 30_000 });
+export function useMetrics(range = '24h') {
+  return useQuery({ queryKey: ['metrics', range], queryFn: () => fetchMetrics(range), staleTime: 30_000 });
 }

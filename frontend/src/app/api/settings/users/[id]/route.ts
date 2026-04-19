@@ -6,11 +6,9 @@ import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
 import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
 
-const updateTaskSchema = z.object({
-  title: z.string().min(1).optional(),
-  status: z.enum(['open', 'in_progress', 'done']).optional(),
-  dueDate: z.string().datetime().optional(),
-  assignedUserId: z.string().optional(),
+const updateSchema = z.object({
+  role: z.enum(['admin', 'user']).optional(),
+  displayName: z.string().min(1).optional(),
 });
 
 export async function DELETE(
@@ -20,13 +18,13 @@ export async function DELETE(
   const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!can(session.user.role, 'tasks.write')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!can(session.user.role, 'users.delete')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (isBackendConfigured()) {
     const raw = await getToken({ req, raw: true });
     if (raw) {
       try {
-        await backendFetch(`/tasks/${id}`, raw, { method: 'DELETE' });
+        await backendFetch(`/settings/users/${encodeURIComponent(id)}`, raw, { method: 'DELETE' });
         return new NextResponse(null, { status: 204 });
       } catch {
         return NextResponse.json({ error: 'Backend unavailable' }, { status: 502 });
@@ -44,21 +42,21 @@ export async function PATCH(
   const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!can(session.user.role, 'tasks.write')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!can(session.user.role, 'settings.write')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json();
-  const parsed = updateTaskSchema.safeParse(body);
+  const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
 
   if (isBackendConfigured()) {
     const raw = await getToken({ req, raw: true });
     if (raw) {
       try {
-        const task = await backendFetch(`/tasks/${id}`, raw, {
+        const user = await backendFetch(`/settings/users/${encodeURIComponent(id)}`, raw, {
           method: 'PATCH',
           body: JSON.stringify(parsed.data),
         });
-        return NextResponse.json(task);
+        return NextResponse.json(user);
       } catch {
         return NextResponse.json({ error: 'Backend unavailable' }, { status: 502 });
       }

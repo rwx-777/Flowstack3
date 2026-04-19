@@ -44,6 +44,23 @@ taskRouter.post("/", async (req, res, next) => {
   }
 });
 
+taskRouter.delete("/:id", async (req, res, next) => {
+  try {
+    const deleted = await prisma.task.deleteMany({
+      where: { id: req.params.id, tenantId: req.auth!.tenantId },
+    });
+
+    if (!deleted.count) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
 taskRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = taskSchema.partial().parse(req.body);

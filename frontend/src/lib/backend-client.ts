@@ -40,5 +40,10 @@ export async function backendFetch<T = unknown>(
     throw new Error(`Backend responded with status ${status}`);
   }
 
+  // 204 No Content has no body
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   return (await res.json()) as T;
 }

@@ -55,9 +55,22 @@ export function useUpdateTask() {
       title?: string;
       status?: 'open' | 'in_progress' | 'done';
       dueDate?: string;
+      assignedUserId?: string;
     }) => {
       const { data } = await axios.patch<Task>(`/api/tasks/${id}`, update);
       return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useDeleteTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await axios.delete(`/api/tasks/${id}`);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tasks'] });

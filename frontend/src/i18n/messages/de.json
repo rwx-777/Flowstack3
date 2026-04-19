@@ -6,6 +6,7 @@
     "executions": "Ausführungen",
     "calendar": "Kalender",
     "tasks": "Aufgaben",
+    "emails": "E-Mails",
     "settings": "Einstellungen",
     "signOut": "Abmelden",
     "search": "Suchen…",
@@ -123,8 +124,11 @@
       "protocol": "Protokoll"
     },
     "today": "Heute",
+    "thisWeek": "Diese Woche",
     "noEvents": "Keine Termine geplant.",
     "linkedWorkflow": "Verknüpfter Workflow",
+    "sync": "Outlook synchronisieren",
+    "syncing": "Wird synchronisiert…",
     "days": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
   },
   "tasks": {
@@ -136,9 +140,12 @@
     "emptyHint": "Erstellen Sie eine neue Aufgabe oder verbinden Sie das Backend, um Aufgaben aus Workflows zu sehen.",
     "backendRequired": "Backend nicht erreichbar. Bitte starten Sie die Backend-API, um Aufgaben zu verwalten.",
     "cycleStatus": "Status ändern",
+    "delete": "Aufgabe löschen",
     "fields": {
       "title": "Titel",
-      "dueDate": "Fälligkeitsdatum"
+      "dueDate": "Fälligkeitsdatum",
+      "assignee": "Zugewiesen an",
+      "unassigned": "Nicht zugewiesen"
     },
     "status": {
       "open": "Offen",
@@ -153,6 +160,42 @@
     "notFoundTitle": "Seite nicht gefunden",
     "notFoundBody": "Die angeforderte Seite existiert nicht.",
     "backHome": "Zurück zur Übersicht"
+  },
+  "emails": {
+    "title": "E-Mail-Eingang",
+    "subtitle": "Eingehende E-Mails mit KI-Analyse und automatischen Antworten",
+    "sync": "Synchronisieren",
+    "syncing": "Wird synchronisiert…",
+    "empty": "Keine E-Mails vorhanden",
+    "emptyHint": "Verbinden Sie das Backend oder synchronisieren Sie E-Mails, um sie hier anzuzeigen.",
+    "messages": "Nachrichten",
+    "body": "Inhalt",
+    "aiDraft": "KI-Antwort-Entwurf",
+    "sendReply": "Antwort senden",
+    "sending": "Wird gesendet…",
+    "generateDraft": "KI-Entwurf erstellen",
+    "generating": "Wird erstellt…",
+    "selectEmail": "Wählen Sie eine E-Mail aus, um Details anzuzeigen."
+  },
+  "settings": {
+    "subtitle": "Organisations- und Benutzerverwaltung",
+    "organization": "Organisation",
+    "orgName": "Name",
+    "userCount": "Benutzer",
+    "workflowCount": "Workflows",
+    "users": "Benutzerverwaltung",
+    "name": "Name",
+    "email": "E-Mail",
+    "role": "Rolle",
+    "joined": "Beigetreten",
+    "actions": "Aktionen",
+    "editRole": "Rolle ändern",
+    "saveRole": "Speichern",
+    "saving": "Speichert…",
+    "cancel": "Abbrechen",
+    "deleteUser": "Benutzer löschen",
+    "confirmDelete": "Sicher?",
+    "confirm": "Bestätigen"
   },
   "loading": "Lädt…"
 }

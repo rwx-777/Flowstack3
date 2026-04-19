@@ -1,13 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { getToken } from 'next-auth/jwt';
 import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
+import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
 import { getMetrics } from '@/server/services/metrics-service';
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!can(session.user.role, 'workflows.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const range = req.nextUrl.searchParams.get('range') ?? '24h';
+
+  if (isBackendConfigured()) {
+    const raw = await getToken({ req, raw: true });
+    if (raw) {
+      try {
+        const data = await backendFetch<unknown>(`/metrics?range=${encodeURIComponent(range)}`, raw);
+        return NextResponse.json(data, { headers: { 'Cache-Control': 'private, max-age=30' } });
+      } catch {
+        /* fall through to mock data */
+      }
+    }
+  }
+
   const metrics = await getMetrics();
   return NextResponse.json(metrics, { headers: { 'Cache-Control': 'private, max-age=30' } });
 }

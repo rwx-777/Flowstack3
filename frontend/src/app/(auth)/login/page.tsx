@@ -6,11 +6,17 @@ export default async function LoginPage() {
   const tApp = await getTranslations('app');
   const t = await getTranslations('auth.login');
 
-  const ssoEnabled = !!(
+  const hasAzureAd = !!(
     process.env.AZURE_AD_CLIENT_ID &&
     process.env.AZURE_AD_CLIENT_SECRET &&
     process.env.AZURE_AD_TENANT_ID
   );
+  const hasBackend = !!process.env.BACKEND_API_URL;
+
+  // Show Microsoft SSO when NextAuth Azure AD provider is configured OR
+  // when the backend is available (it has its own Microsoft OAuth flow).
+  const ssoEnabled = hasAzureAd || hasBackend;
+  const ssoMode: 'nextauth' | 'backend' = hasAzureAd ? 'nextauth' : 'backend';
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg px-4">
@@ -36,7 +42,7 @@ export default async function LoginPage() {
               <p className="mt-1 text-sm text-ink-muted">{t('subtitle')}</p>
             </div>
 
-            <LoginForm ssoEnabled={ssoEnabled} />
+            <LoginForm ssoEnabled={ssoEnabled} ssoMode={ssoMode} />
           </CardContent>
         </Card>
       </div>

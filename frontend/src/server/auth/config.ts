@@ -56,6 +56,48 @@ function buildProviders(): Provider[] {
         };
       },
     }),
+
+    /**
+     * Accept a pre-signed JWT from the backend's Microsoft OAuth flow.
+     * The token is verified with the shared secret (JWT_SECRET = NEXTAUTH_SECRET)
+     * and the claims are used to establish a NextAuth session.
+     */
+    CredentialsProvider({
+      id: 'credentials-token',
+      name: 'Backend Token',
+      credentials: {
+        token: { label: 'Token', type: 'text' },
+      },
+      async authorize(credentials) {
+        const raw = credentials?.token;
+        if (!raw) return null;
+
+        try {
+          const { payload } = await jwtVerify(raw, jwtSecretBytes);
+
+          const userId = String(payload.userId ?? payload.sub ?? '');
+          const email = String(payload.email ?? '');
+          if (!userId || !email) {
+            logger.warn('Backend SSO token missing required claims');
+            return null;
+          }
+
+          const roleParsed = userRoleSchema.safeParse(payload.role);
+          const role = roleParsed.success ? roleParsed.data : 'read';
+
+          logger.info('Backend SSO login success', { userId });
+          return {
+            id: userId,
+            email,
+            name: email.split('@')[0],
+            role,
+          };
+        } catch (err) {
+          logger.warn('Backend SSO token verification failed', { error: String(err) });
+          return null;
+        }
+      },
+    }),
   ];
 
   if (env.AZURE_AD_CLIENT_ID && env.AZURE_AD_CLIENT_SECRET && env.AZURE_AD_TENANT_ID) {

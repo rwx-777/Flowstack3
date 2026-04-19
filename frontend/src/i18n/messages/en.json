@@ -6,6 +6,7 @@
     "executions": "Executions",
     "calendar": "Calendar",
     "tasks": "Tasks",
+    "emails": "Emails",
     "settings": "Settings",
     "signOut": "Sign out",
     "search": "Search…",
@@ -102,8 +103,11 @@
     "subtitle": "Meetings, deadlines and reviews for the next two weeks",
     "kind": { "meeting": "Meeting", "deadline": "Deadline", "review": "Review", "protocol": "Protocol" },
     "today": "Today",
+    "thisWeek": "This week",
     "noEvents": "No events scheduled.",
     "linkedWorkflow": "Linked workflow",
+    "sync": "Sync Outlook",
+    "syncing": "Syncing…",
     "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
   "tasks": {
@@ -115,9 +119,12 @@
     "emptyHint": "Create a new task or connect the backend to see tasks from workflows.",
     "backendRequired": "Backend unavailable. Please start the backend API to manage tasks.",
     "cycleStatus": "Cycle status",
+    "delete": "Delete task",
     "fields": {
       "title": "Title",
-      "dueDate": "Due date"
+      "dueDate": "Due date",
+      "assignee": "Assignee",
+      "unassigned": "Unassigned"
     },
     "status": {
       "open": "Open",
@@ -132,6 +139,42 @@
     "notFoundTitle": "Page not found",
     "notFoundBody": "The page you requested does not exist.",
     "backHome": "Back to overview"
+  },
+  "emails": {
+    "title": "Email Inbox",
+    "subtitle": "Incoming emails with AI analysis and automated responses",
+    "sync": "Sync",
+    "syncing": "Syncing…",
+    "empty": "No emails yet",
+    "emptyHint": "Connect the backend or sync emails to see them here.",
+    "messages": "Messages",
+    "body": "Content",
+    "aiDraft": "AI Draft Reply",
+    "sendReply": "Send reply",
+    "sending": "Sending…",
+    "generateDraft": "Generate AI draft",
+    "generating": "Generating…",
+    "selectEmail": "Select an email to view details."
+  },
+  "settings": {
+    "subtitle": "Organization and user management",
+    "organization": "Organization",
+    "orgName": "Name",
+    "userCount": "Users",
+    "workflowCount": "Workflows",
+    "users": "User Management",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "joined": "Joined",
+    "actions": "Actions",
+    "editRole": "Edit role",
+    "saveRole": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "deleteUser": "Delete user",
+    "confirmDelete": "Sure?",
+    "confirm": "Confirm"
   },
   "loading": "Loading…"
 }
