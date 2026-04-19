@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -23,7 +23,7 @@ function MicrosoftIcon() {
   );
 }
 
-export function LoginForm({ ssoEnabled }: { ssoEnabled: boolean }) {
+export function LoginForm({ ssoEnabled, ssoMode = 'nextauth' }: { ssoEnabled: boolean; ssoMode?: 'nextauth' | 'backend' }) {
   const t = useTranslations('auth.login');
   const tErr = useTranslations('auth.errors');
   const router = useRouter();
@@ -34,6 +34,50 @@ export function LoginForm({ ssoEnabled }: { ssoEnabled: boolean }) {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
+
+  // Handle backend OAuth callback — the backend redirects to /?token=<jwt>
+  // We pick up that token and exchange it for a NextAuth session.
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (!token) return;
+
+    // Remove token from URL to avoid leaking it in browser history
+    const url = new URL(window.location.href);
+    url.searchParams.delete('token');
+    window.history.replaceState({}, '', url.toString());
+
+    // Store the backend JWT and redirect to the dashboard
+    void signIn('credentials-token', { token, redirect: false }).then((res) => {
+      if (res?.ok) {
+        router.push('/overview');
+        router.refresh();
+      }
+    });
+  }, [searchParams, router]);
+
+  async function handleSso() {
+    if (ssoMode === 'nextauth') {
+      void signIn('azure-ad', { callbackUrl });
+      return;
+    }
+
+    // Backend OAuth flow: fetch the authorize URL and redirect
+    setSsoLoading(true);
+    try {
+      const res = await fetch('/api/auth/sso');
+      if (!res.ok) {
+        toast.error(tErr('generic'));
+        setSsoLoading(false);
+        return;
+      }
+      const data = (await res.json()) as { authorizeUrl: string };
+      window.location.href = data.authorizeUrl;
+    } catch {
+      toast.error(tErr('generic'));
+      setSsoLoading(false);
+    }
+  }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -83,10 +127,11 @@ export function LoginForm({ ssoEnabled }: { ssoEnabled: boolean }) {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => signIn('azure-ad', { callbackUrl })}
+            disabled={ssoLoading}
+            onClick={handleSso}
           >
             <MicrosoftIcon />
-            {t('ssoM365')}
+            {ssoLoading ? t('submitting') : t('ssoM365')}
           </Button>
 
           <div className="relative my-5">

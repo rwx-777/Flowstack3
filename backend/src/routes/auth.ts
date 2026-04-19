@@ -65,7 +65,7 @@ authRouter.get("/callback", async (req, res, next) => {
         { expiresIn: "8h" },
       );
 
-      res.redirect(`${env.FRONTEND_URL}?token=${jwtToken}`);
+      res.redirect(`${env.FRONTEND_URL}/login?token=${jwtToken}`);
       return;
     }
 
