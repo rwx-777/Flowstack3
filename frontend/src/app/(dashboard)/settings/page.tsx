@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { z } from 'zod';
@@ -50,6 +50,7 @@ const ROLE_VARIANT = {
 export default function SettingsPage() {
   const t = useTranslations('nav');
   const tSettings = useTranslations('settings');
+  const locale = useLocale();
 
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['settings-users'],
@@ -155,7 +156,7 @@ export default function SettingsPage() {
                       </Badge>
                     </td>
                     <td className="nums px-6 py-3.5 text-ink-muted">
-                      {new Date(user.createdAt).toLocaleDateString('de-DE')}
+                      {new Date(user.createdAt).toLocaleDateString(locale)}
                     </td>
                   </tr>
                 ))}

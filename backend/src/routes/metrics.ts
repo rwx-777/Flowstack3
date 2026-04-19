@@ -78,6 +78,8 @@ metricsRouter.get("/", async (req, res, next) => {
     const completed24h = completedSuccess24h + completedError24h;
     const successRate = completed24h === 0 ? 1 : completedSuccess24h / completed24h;
 
+    // changePercent values are placeholders — replace with historical comparisons
+    // when the data volume justifies week-over-week or day-over-day calculations.
     res.json({
       activeWorkflows: { value: activeWorkflows, changePercent: totalWorkflows > 0 ? 2.4 : 0 },
       executions24h: { value: executions24h, changePercent: 14.3 },

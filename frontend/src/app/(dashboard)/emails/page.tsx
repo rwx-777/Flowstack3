@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { z } from 'zod';
@@ -41,6 +41,7 @@ const STATUS_CONFIG: Record<string, { icon: typeof Clock; variant: 'neutral' | '
 export default function EmailsPage() {
   const t = useTranslations('emails');
   const tNav = useTranslations('nav');
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -123,7 +124,7 @@ export default function EmailsPage() {
                       </div>
                       <p className="mt-1 truncate text-sm font-medium text-ink">{email.subject}</p>
                       <p className="mt-0.5 text-[11px] text-ink-muted">
-                        {new Date(email.createdAt).toLocaleString('de-DE')}
+                        {new Date(email.createdAt).toLocaleString(locale)}
                       </p>
                     </button>
                   </li>
@@ -146,7 +147,7 @@ export default function EmailsPage() {
                       <Badge variant="info">{selected.parsedIntent}</Badge>
                     )}
                     <span className="text-xs text-ink-muted">
-                      {new Date(selected.createdAt).toLocaleString('de-DE')}
+                      {new Date(selected.createdAt).toLocaleString(locale)}
                     </span>
                   </div>
                 </div>
