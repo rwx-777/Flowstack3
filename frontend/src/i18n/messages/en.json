@@ -108,7 +108,22 @@
   },
   "tasks": {
     "title": "Tasks",
-    "subtitle": "Open action items from protocols and reviews"
+    "subtitle": "Open action items from protocols and reviews",
+    "create": "Create",
+    "creating": "Creating…",
+    "empty": "No tasks yet",
+    "emptyHint": "Create a new task or connect the backend to see tasks from workflows.",
+    "backendRequired": "Backend unavailable. Please start the backend API to manage tasks.",
+    "cycleStatus": "Cycle status",
+    "fields": {
+      "title": "Title",
+      "dueDate": "Due date"
+    },
+    "status": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "done": "Done"
+    }
   },
   "errors": {
     "pageTitle": "Something went wrong",

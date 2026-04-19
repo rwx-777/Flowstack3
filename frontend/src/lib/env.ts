@@ -13,6 +13,8 @@ const envSchema = z.object({
   AZURE_AD_CLIENT_ID: z.string().min(1).optional(),
   AZURE_AD_CLIENT_SECRET: z.string().min(1).optional(),
   AZURE_AD_TENANT_ID: z.string().min(1).optional(),
+  BACKEND_API_URL: z.string().url().optional(),
+  BACKEND_JWT_SECRET: z.string().min(32).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

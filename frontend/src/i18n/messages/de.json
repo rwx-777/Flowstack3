@@ -129,7 +129,22 @@
   },
   "tasks": {
     "title": "Aufgaben",
-    "subtitle": "Offene Action-Items aus Protokollen und Reviews"
+    "subtitle": "Offene Action-Items aus Protokollen und Reviews",
+    "create": "Erstellen",
+    "creating": "Wird erstellt…",
+    "empty": "Keine Aufgaben vorhanden",
+    "emptyHint": "Erstellen Sie eine neue Aufgabe oder verbinden Sie das Backend, um Aufgaben aus Workflows zu sehen.",
+    "backendRequired": "Backend nicht erreichbar. Bitte starten Sie die Backend-API, um Aufgaben zu verwalten.",
+    "cycleStatus": "Status ändern",
+    "fields": {
+      "title": "Titel",
+      "dueDate": "Fälligkeitsdatum"
+    },
+    "status": {
+      "open": "Offen",
+      "in_progress": "In Arbeit",
+      "done": "Erledigt"
+    }
   },
   "errors": {
     "pageTitle": "Etwas ist schiefgelaufen",
