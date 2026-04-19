@@ -36,7 +36,7 @@ const createTaskSchema = z.object({
 export async function POST(req: Request): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!can(session.user.role, 'tasks.close')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!can(session.user.role, 'tasks.write')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json();
   const parsed = createTaskSchema.safeParse(body);

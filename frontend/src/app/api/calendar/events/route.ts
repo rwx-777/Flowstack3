@@ -8,12 +8,13 @@ import { listUpcomingEvents } from '@/server/services/calendar-service';
 import type { CalendarEvent } from '@/lib/validation';
 
 /** Map backend Event model to the CalendarEvent shape the frontend expects. */
-function mapBackendEvent(e: Record<string, unknown>): CalendarEvent {
+function mapBackendEvent(e: Record<string, unknown>): CalendarEvent | null {
+  if (!e.id || !e.title || !e.startTime || !e.endTime) return null;
   return {
-    id: String(e.id ?? ''),
-    subject: String(e.title ?? ''),
-    start: String(e.startTime ?? new Date().toISOString()),
-    end: String(e.endTime ?? new Date().toISOString()),
+    id: String(e.id),
+    subject: String(e.title),
+    start: String(e.startTime),
+    end: String(e.endTime),
     location: typeof e.location === 'string' ? e.location : null,
     attendees: Array.isArray(e.attendees)
       ? (e.attendees as Array<Record<string, string>>).map((a) => ({
@@ -40,7 +41,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     if (backendUser) {
       try {
         const raw = await backendFetch<Record<string, unknown>[]>('/calendar/events', backendUser);
-        const events = raw.map(mapBackendEvent);
+        const events = raw.map(mapBackendEvent).filter((e): e is CalendarEvent => e !== null);
         return NextResponse.json({ events });
       } catch {
         /* fall through to mock data */

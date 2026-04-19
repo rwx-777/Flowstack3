@@ -62,9 +62,9 @@ export async function backendFetch<T = unknown>(
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    logger.warn('Backend request failed', { status: res.status, url, body: body.slice(0, 200) });
-    throw new Error(`Backend ${res.status}: ${body.slice(0, 200)}`);
+    const status = res.status;
+    logger.warn('Backend request failed', { status, url });
+    throw new Error(`Backend responded with status ${status}`);
   }
 
   return (await res.json()) as T;
