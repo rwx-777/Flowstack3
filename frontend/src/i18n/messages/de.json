@@ -169,6 +169,8 @@
     "aiDraft": "KI-Antwort-Entwurf",
     "sendReply": "Antwort senden",
     "sending": "Wird gesendet…",
+    "generateDraft": "KI-Entwurf erstellen",
+    "generating": "Wird erstellt…",
     "selectEmail": "Wählen Sie eine E-Mail aus, um Details anzuzeigen."
   },
   "settings": {
@@ -181,7 +183,12 @@
     "name": "Name",
     "email": "E-Mail",
     "role": "Rolle",
-    "joined": "Beigetreten"
+    "joined": "Beigetreten",
+    "actions": "Aktionen",
+    "editRole": "Rolle ändern",
+    "saveRole": "Speichern",
+    "saving": "Speichert…",
+    "cancel": "Abbrechen"
   },
   "loading": "Lädt…"
 }

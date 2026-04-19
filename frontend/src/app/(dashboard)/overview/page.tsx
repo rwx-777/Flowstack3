@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Workflow, Activity, CheckCircle2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -34,17 +34,36 @@ const CATEGORY_TONE = {
   info: 'bg-info-soft text-info',
 } as const;
 
+const TIME_RANGES = [
+  { label: '24 h', hours: 24 },
+  { label: '7 T', hours: 168 },
+  { label: '30 T', hours: 720 },
+  { label: '90 T', hours: 2160 },
+] as const;
+
 export default function OverviewPage() {
   const t = useTranslations('overview');
+  const [selectedRange, setSelectedRange] = useState(0);
+  const [calWeekOffset, setCalWeekOffset] = useState(0);
+
   const { data: metrics, isLoading: metricsLoading } = useMetrics();
   const { data: executions, isLoading: execsLoading } = useExecutions(50);
-  const { data: events, isLoading: eventsLoading } = useCalendarEvents(7);
+  const { data: events, isLoading: eventsLoading } = useCalendarEvents(60);
   const { data: workflows } = useWorkflows();
 
   const failedExecutions = useMemo(
     () => (executions ?? []).filter((e) => e.status === 'error').slice(0, 5),
     [executions],
   );
+
+  // Filter executions by selected time range
+  const filteredExecutions = useMemo(() => {
+    if (!executions) return [];
+    const range = TIME_RANGES[selectedRange];
+    if (!range) return executions;
+    const cutoff = Date.now() - range.hours * 3600_000;
+    return executions.filter((e) => new Date(e.startedAt).getTime() >= cutoff);
+  }, [executions, selectedRange]);
 
   return (
     <>
@@ -60,10 +79,19 @@ export default function OverviewPage() {
               <p className="mt-1.5 text-sm text-ink-muted">{t('subtitle')}</p>
             </div>
             <div className="hidden items-center gap-1 rounded-lg border border-border bg-surface p-1 md:flex">
-              <button className="rounded-md bg-surface-muted px-3 py-1.5 text-xs font-semibold text-ink">24 h</button>
-              <button className="rounded-md px-3 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:text-ink">7 T</button>
-              <button className="rounded-md px-3 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:text-ink">30 T</button>
-              <button className="rounded-md px-3 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:text-ink">90 T</button>
+              {TIME_RANGES.map((range, i) => (
+                <button
+                  key={range.label}
+                  onClick={() => setSelectedRange(i)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    i === selectedRange
+                      ? 'bg-surface-muted font-semibold text-ink'
+                      : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  {range.label}
+                </button>
+              ))}
             </div>
           </header>
 
@@ -124,15 +152,30 @@ export default function OverviewPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setCalWeekOffset((o) => o - 1)}
                   aria-label="Vorherige Woche"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
                 >
                   <ChevronLeft size={14} aria-hidden="true" />
                 </button>
-                <div className="min-w-[200px] rounded-lg border border-border bg-surface px-4 py-1.5 text-center text-xs font-semibold text-ink">
-                  Diese Woche
-                </div>
                 <button
+                  onClick={() => setCalWeekOffset(0)}
+                  className="min-w-[200px] rounded-lg border border-border bg-surface px-4 py-1.5 text-center text-xs font-semibold text-ink transition-colors hover:bg-surface-muted"
+                >
+                  {calWeekOffset === 0 ? 'Diese Woche' : (() => {
+                    const now = new Date();
+                    const start = new Date(now);
+                    start.setDate(start.getDate() + calWeekOffset * 7);
+                    const day = (start.getDay() + 6) % 7;
+                    start.setDate(start.getDate() - day);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + 6);
+                    const fmt = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                    return `${fmt(start)} – ${fmt(end)}`;
+                  })()}
+                </button>
+                <button
+                  onClick={() => setCalWeekOffset((o) => o + 1)}
                   aria-label="Nächste Woche"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
                 >
@@ -150,7 +193,7 @@ export default function OverviewPage() {
             {eventsLoading || !events ? (
               <Skeleton className="h-[280px]" />
             ) : (
-              <CalendarWeek events={events} compact />
+              <CalendarWeek events={events} compact weekOffset={calWeekOffset} />
             )}
             <div className="mt-3 flex flex-wrap items-center gap-5 text-[11px] text-ink-muted">
               <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-sm bg-primary" />Termin</div>
@@ -194,7 +237,7 @@ export default function OverviewPage() {
                   {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
                 </div>
               ) : (
-                <RecentExecutions executions={executions} />
+                <RecentExecutions executions={filteredExecutions} />
               )}
             </div>
           </section>

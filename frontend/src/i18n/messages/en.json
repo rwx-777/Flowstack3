@@ -148,6 +148,8 @@
     "aiDraft": "AI Draft Reply",
     "sendReply": "Send reply",
     "sending": "Sending…",
+    "generateDraft": "Generate AI draft",
+    "generating": "Generating…",
     "selectEmail": "Select an email to view details."
   },
   "settings": {
@@ -160,7 +162,12 @@
     "name": "Name",
     "email": "Email",
     "role": "Role",
-    "joined": "Joined"
+    "joined": "Joined",
+    "actions": "Actions",
+    "editRole": "Edit role",
+    "saveRole": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel"
   },
   "loading": "Loading…"
 }

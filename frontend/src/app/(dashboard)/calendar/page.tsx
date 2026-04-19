@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,16 +10,38 @@ import { UpcomingEvents } from '@/features/calendar/components/upcoming-events';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCalendarEvents } from '@/features/dashboard/hooks';
 
+function formatWeekLabel(weekOffset: number): string {
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() + weekOffset * 7);
+  // Get Monday of that week
+  const day = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - day);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
 export default function CalendarPage() {
   const t = useTranslations('calendar');
   const tNav = useTranslations('nav');
   const queryClient = useQueryClient();
-  const { data: events, isLoading } = useCalendarEvents(14);
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  // Fetch enough events to cover navigation range (up to 60 days)
+  const { data: events, isLoading } = useCalendarEvents(60);
 
   const syncMutation = useMutation({
     mutationFn: () => axios.post('/api/calendar/sync'),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['calendar'] }),
   });
+
+  const weekLabel = useMemo(() => {
+    if (weekOffset === 0) return t('today').replace('Today', 'Diese Woche').replace('Heute', 'Diese Woche');
+    return formatWeekLabel(weekOffset);
+  }, [weekOffset, t]);
 
   return (
     <div className="mx-auto max-w-[1400px] px-8 py-10 space-y-8">
@@ -39,15 +62,20 @@ export default function CalendarPage() {
           </button>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setWeekOffset((o) => o - 1)}
               aria-label="Vorherige Woche"
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
             >
               <ChevronLeft size={16} aria-hidden="true" />
             </button>
-            <div className="min-w-[220px] rounded-lg border border-border bg-surface px-4 py-2 text-center text-sm font-semibold text-ink">
-              Diese Woche
-            </div>
             <button
+              onClick={() => setWeekOffset(0)}
+              className="min-w-[220px] rounded-lg border border-border bg-surface px-4 py-2 text-center text-sm font-semibold text-ink transition-colors hover:bg-surface-muted"
+            >
+              {weekOffset === 0 ? 'Diese Woche' : weekLabel}
+            </button>
+            <button
+              onClick={() => setWeekOffset((o) => o + 1)}
               aria-label="Nächste Woche"
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
             >
@@ -65,7 +93,7 @@ export default function CalendarPage() {
           </>
         ) : (
           <>
-            <CalendarWeek events={events} />
+            <CalendarWeek events={events} weekOffset={weekOffset} />
             <aside className="rounded-lg border border-border bg-surface">
               <div className="border-b border-border px-5 py-4">
                 <h2 className="text-sm font-semibold text-ink">Anstehend</h2>

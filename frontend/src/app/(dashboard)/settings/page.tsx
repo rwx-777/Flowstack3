@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { z } from 'zod';
-import { Users, Building2, Shield } from 'lucide-react';
+import { Users, Building2, Shield, Pencil, X, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,6 +30,7 @@ const tenantResponse = z.object({
 });
 
 type TenantInfo = z.infer<typeof tenantResponse>;
+type User = z.infer<typeof usersResponse>['users'][number];
 
 async function fetchUsers() {
   const { data } = await axios.get('/api/settings/users');
@@ -46,6 +48,78 @@ const ROLE_VARIANT = {
   read: 'neutral' as const,
   user: 'neutral' as const,
 };
+
+const AVAILABLE_ROLES = ['admin', 'user'] as const;
+
+function UserRoleCell({ user }: { user: User }) {
+  const tSettings = useTranslations('settings');
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(user.role);
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: string; role: string }) => {
+      const { data } = await axios.patch(`/api/settings/users/${id}`, { role });
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings-users'] });
+      setEditing(false);
+    },
+  });
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <select
+          value={selectedRole}
+          onChange={(e) => setSelectedRole(e.target.value)}
+          className="h-8 rounded-lg border border-border bg-surface px-2 text-xs text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        >
+          {AVAILABLE_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => updateMutation.mutate({ id: user.id, role: selectedRole })}
+          disabled={updateMutation.isPending || selectedRole === user.role}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-success transition-colors hover:bg-success-soft disabled:opacity-50"
+          aria-label={tSettings('saveRole')}
+        >
+          <Check size={14} />
+        </button>
+        <button
+          onClick={() => {
+            setSelectedRole(user.role);
+            setEditing(false);
+          }}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+          aria-label={tSettings('cancel')}
+        >
+          <X size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant={ROLE_VARIANT[user.role as keyof typeof ROLE_VARIANT] ?? 'neutral'}>
+        <Shield size={10} aria-hidden="true" />
+        {user.role}
+      </Badge>
+      <button
+        onClick={() => setEditing(true)}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+        aria-label={tSettings('editRole')}
+      >
+        <Pencil size={12} />
+      </button>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const t = useTranslations('nav');
@@ -141,6 +215,7 @@ export default function SettingsPage() {
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-fg">
                           {user.name
                             .split(/[\s@.]/)
+                            .filter(Boolean)
                             .map((p) => p[0]?.toUpperCase() ?? '')
                             .slice(0, 2)
                             .join('')}
@@ -150,10 +225,7 @@ export default function SettingsPage() {
                     </td>
                     <td className="px-6 py-3.5 text-ink-muted">{user.email}</td>
                     <td className="px-6 py-3.5">
-                      <Badge variant={ROLE_VARIANT[user.role as keyof typeof ROLE_VARIANT] ?? 'neutral'}>
-                        <Shield size={10} aria-hidden="true" />
-                        {user.role}
-                      </Badge>
+                      <UserRoleCell user={user} />
                     </td>
                     <td className="nums px-6 py-3.5 text-ink-muted">
                       {new Date(user.createdAt).toLocaleDateString(locale)}

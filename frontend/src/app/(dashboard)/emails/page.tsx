@@ -59,6 +59,7 @@ export default function EmailsPage() {
 
   const replyMutation = useMutation({
     mutationFn: (emailId: string) => axios.post(`/api/emails/${emailId}/reply`, {}),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['emails'] }),
   });
 
   const selected = emails?.find((e) => e.id === selectedId) ?? null;
@@ -172,6 +173,19 @@ export default function EmailsPage() {
                     >
                       <Send size={14} aria-hidden="true" />
                       {replyMutation.isPending ? t('sending') : t('sendReply')}
+                    </button>
+                  </div>
+                )}
+
+                {!selected.aiResponse && (
+                  <div>
+                    <button
+                      onClick={() => replyMutation.mutate(selected.id)}
+                      disabled={replyMutation.isPending}
+                      className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-xs font-semibold text-ink transition-colors hover:bg-surface-muted disabled:opacity-50"
+                    >
+                      <Mail size={14} aria-hidden="true" />
+                      {replyMutation.isPending ? t('generating') : t('generateDraft')}
                     </button>
                   </div>
                 )}

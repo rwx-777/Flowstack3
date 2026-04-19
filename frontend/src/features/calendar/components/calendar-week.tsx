@@ -34,9 +34,11 @@ function startOfWeek(d: Date): Date {
 export interface CalendarWeekProps {
   events: readonly CalendarEvent[];
   compact?: boolean;
+  /** Number of weeks to offset from current week (negative = past, positive = future) */
+  weekOffset?: number;
 }
 
-export function CalendarWeek({ events, compact = false }: CalendarWeekProps) {
+export function CalendarWeek({ events, compact = false, weekOffset = 0 }: CalendarWeekProps) {
   const t = useTranslations('calendar');
   const tKind = useTranslations('calendar.kind');
   const dayLabels = useMemo(() => {
@@ -48,7 +50,9 @@ export function CalendarWeek({ events, compact = false }: CalendarWeekProps) {
   }, [t]);
 
   const today = new Date();
-  const weekStart = startOfWeek(today);
+  const offsetDate = new Date(today);
+  offsetDate.setDate(offsetDate.getDate() + weekOffset * 7);
+  const weekStart = startOfWeek(offsetDate);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
