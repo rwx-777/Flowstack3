@@ -3,9 +3,11 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { apiRateLimit } from "../middleware/rateLimit.js";
 import { enqueueEmailProcessing } from "../workers/queue.js";
 
 export const emailRouter = Router();
+emailRouter.use(apiRateLimit);
 emailRouter.use(requireAuth);
 
 emailRouter.get("/", async (req, res, next) => {
@@ -52,8 +54,9 @@ emailRouter.post("/sync", async (req, res, next) => {
 
 emailRouter.post("/:id/reply", async (req, res, next) => {
   try {
+    const emailId = String(req.params.id);
     const email = await prisma.email.findFirst({
-      where: { id: req.params.id, tenantId: req.auth!.tenantId }
+      where: { id: emailId, tenantId: req.auth!.tenantId }
     });
 
     if (!email) {

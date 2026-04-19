@@ -3,8 +3,10 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { apiRateLimit } from "../middleware/rateLimit.js";
 
 export const taskRouter = Router();
+taskRouter.use(apiRateLimit);
 taskRouter.use(requireAuth);
 
 const taskSchema = z.object({

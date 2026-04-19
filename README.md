@@ -39,7 +39,7 @@ Cloud-ready multi-tenant SaaS MVP for professional service firms (law and insura
 ### 1) Backend
 
 ```bash
-cd /home/runner/work/Flowstack3/Flowstack3/backend
+cd backend
 cp .env.example .env
 npm ci
 npm run prisma:generate
@@ -52,7 +52,7 @@ npm run dev
 ### 2) Frontend
 
 ```bash
-cd /home/runner/work/Flowstack3/Flowstack3/frontend
+cd frontend
 cp .env.example .env.local
 npm ci
 npm run lint
@@ -63,7 +63,6 @@ npm run dev
 ### 3) Full Stack via Docker Compose
 
 ```bash
-cd /home/runner/work/Flowstack3/Flowstack3
 docker compose up --build
 ```
 
