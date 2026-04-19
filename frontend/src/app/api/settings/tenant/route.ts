@@ -4,31 +4,29 @@ import { getToken } from 'next-auth/jwt';
 import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
 import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
-import { listExecutions } from '@/server/services/execution-service';
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!can(session.user.role, 'executions.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-  const { searchParams } = new URL(req.url);
-  const limit = Math.min(200, Math.max(1, Number(searchParams.get('limit') ?? 50)));
+  if (!can(session.user.role, 'settings.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (isBackendConfigured()) {
     const raw = await getToken({ req, raw: true });
     if (raw) {
       try {
-        const data = await backendFetch<{ executions: unknown[] }>(
-          `/executions?limit=${limit}`,
-          raw,
-        );
+        const data = await backendFetch<unknown>('/settings/tenant', raw);
         return NextResponse.json(data);
       } catch {
-        /* fall through to mock data */
+        /* fall through to default */
       }
     }
   }
 
-  const executions = await listExecutions(limit);
-  return NextResponse.json({ executions });
+  return NextResponse.json({
+    id: 'demo',
+    name: 'Demo Organization',
+    createdAt: '2025-01-01T00:00:00.000Z',
+    userCount: 3,
+    workflowCount: 0,
+  });
 }

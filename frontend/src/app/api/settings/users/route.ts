@@ -4,24 +4,18 @@ import { getToken } from 'next-auth/jwt';
 import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
 import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
-import { listExecutions } from '@/server/services/execution-service';
+import { listUsers } from '@/server/services/user-service';
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!can(session.user.role, 'executions.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-  const { searchParams } = new URL(req.url);
-  const limit = Math.min(200, Math.max(1, Number(searchParams.get('limit') ?? 50)));
+  if (!can(session.user.role, 'users.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (isBackendConfigured()) {
     const raw = await getToken({ req, raw: true });
     if (raw) {
       try {
-        const data = await backendFetch<{ executions: unknown[] }>(
-          `/executions?limit=${limit}`,
-          raw,
-        );
+        const data = await backendFetch<{ users: unknown[] }>('/settings/users', raw);
         return NextResponse.json(data);
       } catch {
         /* fall through to mock data */
@@ -29,6 +23,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const executions = await listExecutions(limit);
-  return NextResponse.json({ executions });
+  const users = await listUsers();
+  return NextResponse.json({ users });
 }
