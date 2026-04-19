@@ -58,7 +58,7 @@ services:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production-must-be-32-chars}
       BACKEND_API_URL: http://backend:4000
-      BACKEND_JWT_SECRET: dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION
+      BACKEND_JWT_SECRET: ${BACKEND_JWT_SECRET:-dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION}
       LOG_LEVEL: info
     depends_on:
       - backend

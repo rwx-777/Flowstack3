@@ -10,11 +10,11 @@ import type { CalendarEvent } from '@/lib/validation';
 /** Map backend Event model to the CalendarEvent shape the frontend expects. */
 function mapBackendEvent(e: Record<string, unknown>): CalendarEvent {
   return {
-    id: e.id as string,
-    subject: e.title as string,
-    start: e.startTime as string,
-    end: e.endTime as string,
-    location: null,
+    id: String(e.id ?? ''),
+    subject: String(e.title ?? ''),
+    start: String(e.startTime ?? new Date().toISOString()),
+    end: String(e.endTime ?? new Date().toISOString()),
+    location: typeof e.location === 'string' ? e.location : null,
     attendees: Array.isArray(e.attendees)
       ? (e.attendees as Array<Record<string, string>>).map((a) => ({
           email: a.email ?? '',

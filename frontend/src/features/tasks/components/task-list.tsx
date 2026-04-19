@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { CheckCircle2, Circle, Clock, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,14 @@ const STATUS_TONE = {
   done: 'success',
 } as const;
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export function TaskList() {
   const t = useTranslations('tasks');
+  const locale = useLocale();
   const { data: tasks, isLoading, error } = useTasks();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -164,7 +165,7 @@ export function TaskList() {
                     </p>
                   </div>
                   <span className="hidden text-xs text-ink-muted sm:inline">
-                    {formatDate(task.dueDate)}
+                    {formatDate(task.dueDate, locale)}
                   </span>
                   <Badge variant={STATUS_TONE[task.status]}>{t(`status.${task.status}`)}</Badge>
                 </li>
