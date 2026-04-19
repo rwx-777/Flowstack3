@@ -1,5 +1,7 @@
 import type { NextAuthOptions } from 'next-auth';
+import type { Provider } from 'next-auth/providers/index';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import AzureADProvider from 'next-auth/providers/azure-ad';
 import bcrypt from 'bcryptjs';
 
 import { env } from '@/lib/env';
@@ -7,11 +9,8 @@ import { logger } from '@/lib/logger';
 import { loginSchema, userRoleSchema, type UserRole } from '@/lib/validation';
 import { findUserByEmail } from '@/server/services/user-service';
 
-export const authOptions: NextAuthOptions = {
-  secret: env.NEXTAUTH_SECRET,
-  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 /* 8h */ },
-  pages: { signIn: '/login', error: '/login' },
-  providers: [
+function buildProviders(): Provider[] {
+  const providers: Provider[] = [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -48,7 +47,27 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-  ],
+  ];
+
+  if (env.AZURE_AD_CLIENT_ID && env.AZURE_AD_CLIENT_SECRET && env.AZURE_AD_TENANT_ID) {
+    providers.push(
+      AzureADProvider({
+        clientId: env.AZURE_AD_CLIENT_ID,
+        clientSecret: env.AZURE_AD_CLIENT_SECRET,
+        tenantId: env.AZURE_AD_TENANT_ID,
+      }),
+    );
+    logger.info('Azure AD SSO provider enabled');
+  }
+
+  return providers;
+}
+
+export const authOptions: NextAuthOptions = {
+  secret: env.NEXTAUTH_SECRET,
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 /* 8h */ },
+  pages: { signIn: '/login', error: '/login' },
+  providers: buildProviders(),
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

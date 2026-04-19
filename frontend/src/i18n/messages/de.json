@@ -23,6 +23,8 @@
       "password": "Passwort",
       "submit": "Anmelden",
       "submitting": "Wird angemeldet…",
+      "ssoM365": "SSO via M365",
+      "ssoSeparator": "oder",
       "demoHint": "Demo: admin@verodyn.local / ChangeMe!2025"
     },
     "errors": {
