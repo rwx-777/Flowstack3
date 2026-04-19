@@ -22,11 +22,16 @@ declare global {
  * The function gracefully handles both by falling back to `sub` for `userId`
  * and to `"default"` for `tenantId`.
  */
-function normalisePayload(payload: Record<string, unknown>): AuthenticatedUser {
+function normalisePayload(payload: Record<string, unknown>): AuthenticatedUser | null {
+  const userId = String(payload.userId ?? payload.sub ?? "");
+  const email = String(payload.email ?? "");
+
+  if (!userId || !email) return null;
+
   return {
-    userId: String(payload.userId ?? payload.sub ?? ""),
+    userId,
     tenantId: String(payload.tenantId ?? "default"),
-    email: String(payload.email ?? ""),
+    email,
     role: payload.role === "admin" ? "admin" : "user",
   };
 }
@@ -41,7 +46,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   try {
     const token = authHeader.replace("Bearer ", "").trim();
     const payload = jwt.verify(token, env.JWT_SECRET) as Record<string, unknown>;
-    req.auth = normalisePayload(payload);
+    const user = normalisePayload(payload);
+    if (!user) {
+      res.status(401).json({ error: "Token missing required claims" });
+      return;
+    }
+    req.auth = user;
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });
