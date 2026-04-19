@@ -1,22 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import { getLocale, getMessages } from 'next-intl/server';
 
 import './globals.css';
 import { Providers } from './providers';
-
-const sans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-sans',
-});
-
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-mono',
-});
 
 export const metadata: Metadata = {
   title: 'FlowStack by Verodyn',
@@ -46,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${sans.variable} ${mono.variable}`}>
+    <html lang={locale}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

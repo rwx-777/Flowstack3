@@ -59,7 +59,7 @@ export default function LoginPage() {
         setSubmitting(false);
         return;
       }
-      router.push(callbackUrl);
+      router.push(callbackUrl as Parameters<typeof router.push>[0]);
       router.refresh();
     } catch {
       toast.error(tErr('generic'));

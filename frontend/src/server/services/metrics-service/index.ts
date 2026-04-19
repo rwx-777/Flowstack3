@@ -1,7 +1,7 @@
 import type { Metrics } from '@/lib/validation';
-import { listWorkflows } from './workflow-service';
-import { listExecutions } from './execution-service';
-import { listUpcomingEvents } from './calendar-service';
+import { listWorkflows } from '../workflow-service';
+import { listExecutions } from '../execution-service';
+import { listUpcomingEvents } from '../calendar-service';
 
 /**
  * Aggregate overview metrics. Computes from the in-memory seeds so numbers
