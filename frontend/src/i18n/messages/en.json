@@ -6,6 +6,7 @@
     "executions": "Executions",
     "calendar": "Calendar",
     "tasks": "Tasks",
+    "emails": "Emails",
     "settings": "Settings",
     "signOut": "Sign out",
     "search": "Search…",
@@ -132,6 +133,32 @@
     "notFoundTitle": "Page not found",
     "notFoundBody": "The page you requested does not exist.",
     "backHome": "Back to overview"
+  },
+  "emails": {
+    "title": "Email Inbox",
+    "subtitle": "Incoming emails with AI analysis and automated responses",
+    "sync": "Sync",
+    "syncing": "Syncing…",
+    "empty": "No emails yet",
+    "emptyHint": "Connect the backend or sync emails to see them here.",
+    "messages": "Messages",
+    "body": "Content",
+    "aiDraft": "AI Draft Reply",
+    "sendReply": "Send reply",
+    "sending": "Sending…",
+    "selectEmail": "Select an email to view details."
+  },
+  "settings": {
+    "subtitle": "Organization and user management",
+    "organization": "Organization",
+    "orgName": "Name",
+    "userCount": "Users",
+    "workflowCount": "Workflows",
+    "users": "User Management",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "joined": "Joined"
   },
   "loading": "Loading…"
 }

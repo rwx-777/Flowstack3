@@ -10,6 +10,7 @@ import {
   Activity,
   Calendar as CalendarIcon,
   CheckSquare,
+  Mail,
   Settings as SettingsIcon,
   LogOut,
   type LucideIcon,
@@ -21,7 +22,7 @@ import { can, type Permission } from '@/lib/rbac';
 
 interface NavItem {
   href: string;
-  labelKey: 'overview' | 'workflows' | 'executions' | 'calendar' | 'tasks' | 'settings';
+  labelKey: 'overview' | 'workflows' | 'executions' | 'calendar' | 'tasks' | 'emails' | 'settings';
   icon: LucideIcon;
   permission: Permission;
   group: 'workspace' | 'admin';
@@ -33,6 +34,7 @@ const NAV: readonly NavItem[] = [
   { href: '/executions', labelKey: 'executions', icon: Activity,      permission: 'executions.read', group: 'workspace' },
   { href: '/calendar',   labelKey: 'calendar',   icon: CalendarIcon,  permission: 'calendar.read',   group: 'workspace' },
   { href: '/tasks',      labelKey: 'tasks',      icon: CheckSquare,   permission: 'tasks.read',      group: 'workspace' },
+  { href: '/emails',     labelKey: 'emails',     icon: Mail,          permission: 'workflows.read',  group: 'workspace' },
   { href: '/settings',   labelKey: 'settings',   icon: SettingsIcon,  permission: 'settings.read',   group: 'admin' },
 ];
 

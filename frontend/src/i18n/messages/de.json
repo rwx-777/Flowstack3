@@ -6,6 +6,7 @@
     "executions": "Ausführungen",
     "calendar": "Kalender",
     "tasks": "Aufgaben",
+    "emails": "E-Mails",
     "settings": "Einstellungen",
     "signOut": "Abmelden",
     "search": "Suchen…",
@@ -153,6 +154,32 @@
     "notFoundTitle": "Seite nicht gefunden",
     "notFoundBody": "Die angeforderte Seite existiert nicht.",
     "backHome": "Zurück zur Übersicht"
+  },
+  "emails": {
+    "title": "E-Mail-Eingang",
+    "subtitle": "Eingehende E-Mails mit KI-Analyse und automatischen Antworten",
+    "sync": "Synchronisieren",
+    "syncing": "Wird synchronisiert…",
+    "empty": "Keine E-Mails vorhanden",
+    "emptyHint": "Verbinden Sie das Backend oder synchronisieren Sie E-Mails, um sie hier anzuzeigen.",
+    "messages": "Nachrichten",
+    "body": "Inhalt",
+    "aiDraft": "KI-Antwort-Entwurf",
+    "sendReply": "Antwort senden",
+    "sending": "Wird gesendet…",
+    "selectEmail": "Wählen Sie eine E-Mail aus, um Details anzuzeigen."
+  },
+  "settings": {
+    "subtitle": "Organisations- und Benutzerverwaltung",
+    "organization": "Organisation",
+    "orgName": "Name",
+    "userCount": "Benutzer",
+    "workflowCount": "Workflows",
+    "users": "Benutzerverwaltung",
+    "name": "Name",
+    "email": "E-Mail",
+    "role": "Rolle",
+    "joined": "Beigetreten"
   },
   "loading": "Lädt…"
 }
