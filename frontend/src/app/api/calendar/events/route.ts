@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { getToken } from 'next-auth/jwt';
 import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
 import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
-import { sessionToBackendUser } from '@/lib/session-bridge';
 import { listUpcomingEvents } from '@/server/services/calendar-service';
 import type { CalendarEvent } from '@/lib/validation';
 
@@ -27,7 +27,7 @@ function mapBackendEvent(e: Record<string, unknown>): CalendarEvent | null {
   };
 }
 
-export async function GET(req: Request): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!can(session.user.role, 'calendar.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -37,11 +37,11 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   // Try backend first
   if (isBackendConfigured()) {
-    const backendUser = sessionToBackendUser(session);
-    if (backendUser) {
+    const raw = await getToken({ req, raw: true });
+    if (raw) {
       try {
-        const raw = await backendFetch<Record<string, unknown>[]>('/calendar/events', backendUser);
-        const events = raw.map(mapBackendEvent).filter((e): e is CalendarEvent => e !== null);
+        const rawEvents = await backendFetch<Record<string, unknown>[]>('/calendar/events', raw);
+        const events = rawEvents.map(mapBackendEvent).filter((e): e is CalendarEvent => e !== null);
         return NextResponse.json({ events });
       } catch {
         /* fall through to mock data */

@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { getToken } from 'next-auth/jwt';
 import { z } from 'zod';
 import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
 import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
-import { sessionToBackendUser } from '@/lib/session-bridge';
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
@@ -14,7 +14,7 @@ const updateTaskSchema = z.object({
 });
 
 export async function PATCH(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const { id } = await params;
@@ -27,10 +27,10 @@ export async function PATCH(
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
 
   if (isBackendConfigured()) {
-    const backendUser = sessionToBackendUser(session);
-    if (backendUser) {
+    const raw = await getToken({ req, raw: true });
+    if (raw) {
       try {
-        const task = await backendFetch(`/tasks/${id}`, backendUser, {
+        const task = await backendFetch(`/tasks/${id}`, raw, {
           method: 'PATCH',
           body: JSON.stringify(parsed.data),
         });

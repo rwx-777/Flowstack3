@@ -11,6 +11,26 @@ declare global {
   }
 }
 
+/**
+ * Normalise a decoded JWT payload into the AuthenticatedUser shape.
+ *
+ * Tokens may originate from:
+ *   • The backend `/auth/callback` (has `userId`, `tenantId`, `email`, `role`).
+ *   • A NextAuth session JWT forwarded by the frontend (has `userId` as a
+ *     custom claim, `email`, `role`; `tenantId` may be absent).
+ *
+ * The function gracefully handles both by falling back to `sub` for `userId`
+ * and to `"default"` for `tenantId`.
+ */
+function normalisePayload(payload: Record<string, unknown>): AuthenticatedUser {
+  return {
+    userId: String(payload.userId ?? payload.sub ?? ""),
+    tenantId: String(payload.tenantId ?? "default"),
+    email: String(payload.email ?? ""),
+    role: payload.role === "admin" ? "admin" : "user",
+  };
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -20,8 +40,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   try {
     const token = authHeader.replace("Bearer ", "").trim();
-    const payload = jwt.verify(token, env.JWT_SECRET) as AuthenticatedUser;
-    req.auth = payload;
+    const payload = jwt.verify(token, env.JWT_SECRET) as Record<string, unknown>;
+    req.auth = normalisePayload(payload);
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });

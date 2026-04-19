@@ -21,7 +21,7 @@ services:
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/flowstack3
-      JWT_SECRET: dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION
+      JWT_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production-must-be-32-chars}
       ENCRYPTION_KEY: dev-encrypt-key-DO-NOT-USE-IN-PRODUCTION
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
@@ -42,7 +42,7 @@ services:
     command: npm run worker
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/flowstack3
-      JWT_SECRET: dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION
+      JWT_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production-must-be-32-chars}
       ENCRYPTION_KEY: dev-encrypt-key-DO-NOT-USE-IN-PRODUCTION
       REDIS_URL: redis://redis:6379
       QUEUE_INLINE_MODE: "false"
@@ -58,7 +58,6 @@ services:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production-must-be-32-chars}
       BACKEND_API_URL: http://backend:4000
-      BACKEND_JWT_SECRET: ${BACKEND_JWT_SECRET:-dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION}
       LOG_LEVEL: info
     depends_on:
       - backend

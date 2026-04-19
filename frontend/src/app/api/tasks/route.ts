@@ -1,21 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { getToken } from 'next-auth/jwt';
 import { z } from 'zod';
 import { authOptions } from '@/server/auth/config';
 import { can } from '@/lib/rbac';
 import { isBackendConfigured, backendFetch } from '@/lib/backend-client';
-import { sessionToBackendUser } from '@/lib/session-bridge';
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!can(session.user.role, 'tasks.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (isBackendConfigured()) {
-    const backendUser = sessionToBackendUser(session);
-    if (backendUser) {
+    const raw = await getToken({ req, raw: true });
+    if (raw) {
       try {
-        const tasks = await backendFetch<unknown[]>('/tasks', backendUser);
+        const tasks = await backendFetch<unknown[]>('/tasks', raw);
         return NextResponse.json({ tasks });
       } catch {
         /* fall through to empty array */
@@ -33,7 +33,7 @@ const createTaskSchema = z.object({
   assignedUserId: z.string().optional(),
 });
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!can(session.user.role, 'tasks.write')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -43,10 +43,10 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
 
   if (isBackendConfigured()) {
-    const backendUser = sessionToBackendUser(session);
-    if (backendUser) {
+    const raw = await getToken({ req, raw: true });
+    if (raw) {
       try {
-        const task = await backendFetch('/tasks', backendUser, {
+        const task = await backendFetch('/tasks', raw, {
           method: 'POST',
           body: JSON.stringify(parsed.data),
         });
