@@ -32,7 +32,7 @@ const NAV: readonly NavItem[] = [
   { href: '/workflows',  labelKey: 'workflows',  icon: WorkflowIcon,  permission: 'workflows.read',  group: 'workspace' },
   { href: '/executions', labelKey: 'executions', icon: Activity,      permission: 'executions.read', group: 'workspace' },
   { href: '/calendar',   labelKey: 'calendar',   icon: CalendarIcon,  permission: 'calendar.read',   group: 'workspace' },
-  { href: '/tasks',      labelKey: 'tasks',      icon: CheckSquare,   permission: 'tasks.close',     group: 'workspace' },
+  { href: '/tasks',      labelKey: 'tasks',      icon: CheckSquare,   permission: 'tasks.read',      group: 'workspace' },
   { href: '/settings',   labelKey: 'settings',   icon: SettingsIcon,  permission: 'settings.read',   group: 'admin' },
 ];
 

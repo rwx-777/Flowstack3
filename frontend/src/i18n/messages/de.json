@@ -9,7 +9,11 @@
     "settings": "Einstellungen",
     "signOut": "Abmelden",
     "search": "Suchen…",
-    "toggleTheme": "Theme wechseln"
+    "toggleTheme": "Theme wechseln",
+    "notifications": "Benachrichtigungen",
+    "newWorkflow": "Neuer Workflow",
+    "module": "Modul",
+    "administration": "Administration"
   },
   "auth": {
     "login": {
@@ -83,6 +87,10 @@
       "now": "jetzt",
       "hoursAgo": "vor {count} Std",
       "daysAgo": "vor {count} T"
+    },
+    "detail": {
+      "executionsCount": "{count} Ausführungen",
+      "noExecutions": "Keine Ausführungen vorhanden."
     }
   },
   "executions": {

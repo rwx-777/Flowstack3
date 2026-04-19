@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   // Executions & tasks
   'executions.read':   ['admin', 'write', 'read'],
   'executions.retry':  ['admin', 'write'],
+  'tasks.read':        ['admin', 'write', 'read'],
   'tasks.close':       ['admin', 'write'],
 
   // Calendar
