@@ -212,5 +212,5 @@ cp backend/.env.example backend/.env
 
 ## Notes
 
-- **Microsoft SSO:** Configure real Microsoft Entra ID credentials via the backend environment variables. For local development the auth callback also supports demo query params (`email`, `tenant`, `role`).
+- **Microsoft SSO:** Configure real Microsoft Entra ID credentials via the backend environment variables. For local development, the auth callback also supports demo query params (`email`, `tenant`, `role`).
 - **Queue modes:** Set `QUEUE_INLINE_MODE=true` for simple local dev (no Redis required). Set it to `false` and run `npm run worker` in a separate terminal for the full Redis-backed worker pipeline.
