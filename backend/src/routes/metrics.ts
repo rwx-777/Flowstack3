@@ -40,7 +40,6 @@ metricsRouter.get("/", async (req, res, next) => {
     const [
       totalWorkflows,
       activeWorkflows,
-      prevActiveWorkflows,
       executionsCurrent,
       executionsPrev,
       successCurrent,
@@ -52,8 +51,6 @@ metricsRouter.get("/", async (req, res, next) => {
     ] = await Promise.all([
       prisma.workflow.count({ where: { tenantId } }),
       prisma.workflow.count({ where: { tenantId, active: true } }),
-      // For workflows, changePercent = current vs total (no historical snapshot)
-      prisma.workflow.count({ where: { tenantId } }),
       prisma.workflowExecution.count({
         where: { tenantId, startedAt: { gte: periodStart } },
       }),
@@ -118,11 +115,9 @@ metricsRouter.get("/", async (req, res, next) => {
     const successRateCurrent = completedCurrent === 0 ? 1 : successCurrent / completedCurrent;
     const successRatePrev = completedPrev === 0 ? 1 : successPrev / completedPrev;
 
-    // For workflows changePercent: active/total ratio — since we don't snapshot history,
-    // report 0 when there are no workflows, otherwise (active/total)*100 as a "health" indicator
-    const workflowChangePercent = totalWorkflows > 0
-      ? changePercent(activeWorkflows, prevActiveWorkflows > 0 ? prevActiveWorkflows : activeWorkflows)
-      : 0;
+    // For workflows changePercent: since we don't snapshot historical state,
+    // return 0 when no meaningful comparison can be made.
+    const workflowChangePercent = 0;
 
     res.json({
       activeWorkflows: {

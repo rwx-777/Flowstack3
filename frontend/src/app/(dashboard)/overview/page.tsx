@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Workflow, Activity, CheckCircle2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { AlertBanner } from '@/features/alerts/components/alert-banner';
@@ -44,6 +44,7 @@ const TIME_RANGES = [
 export default function OverviewPage() {
   const t = useTranslations('overview');
   const tCal = useTranslations('calendar');
+  const locale = useLocale();
   const [selectedRange, setSelectedRange] = useState(0);
   const [calWeekOffset, setCalWeekOffset] = useState(0);
 
@@ -172,7 +173,7 @@ export default function OverviewPage() {
                     start.setDate(start.getDate() - day);
                     const end = new Date(start);
                     end.setDate(end.getDate() + 6);
-                    const fmt = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                    const fmt = (d: Date) => d.toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', { day: '2-digit', month: '2-digit' });
                     return `${fmt(start)} – ${fmt(end)}`;
                   })()}
                 </button>
