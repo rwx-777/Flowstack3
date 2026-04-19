@@ -9,7 +9,7 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-[1400px] px-8 py-10 space-y-8">
       <header>
-        <p className="label-xs mb-1">Administration</p>
+        <p className="label-xs mb-1">{t('administration')}</p>
         <h1 className="text-3xl font-bold tracking-tight text-ink">{t('settings')}</h1>
       </header>
 

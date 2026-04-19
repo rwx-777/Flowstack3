@@ -11,7 +11,9 @@
     "search": "Search…",
     "toggleTheme": "Toggle theme",
     "notifications": "Notifications",
-    "newWorkflow": "New workflow"
+    "newWorkflow": "New workflow",
+    "module": "Module",
+    "administration": "Administration"
   },
   "auth": {
     "login": {
@@ -75,6 +77,10 @@
       "now": "now",
       "hoursAgo": "{count}h ago",
       "daysAgo": "{count}d ago"
+    },
+    "detail": {
+      "executionsCount": "{count} Executions",
+      "noExecutions": "No executions found."
     }
   },
   "executions": {

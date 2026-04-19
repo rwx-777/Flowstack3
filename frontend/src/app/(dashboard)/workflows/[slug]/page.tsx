@@ -95,13 +95,13 @@ export default function WorkflowDetailPage({ params }: { params: Promise<{ slug:
       <div className="rounded-lg border border-border bg-surface">
         <div className="border-b border-border px-6 py-4">
           <h2 className="text-sm font-semibold text-ink">
-            {executions?.length ?? 0} Ausführungen
+            {t('detail.executionsCount', { count: executions?.length ?? 0 })}
           </h2>
         </div>
         {executions && executions.length > 0 ? (
           <RecentExecutions executions={executions} limit={20} />
         ) : (
-          <p className="px-6 py-8 text-sm text-ink-muted">Keine Ausführungen vorhanden.</p>
+          <p className="px-6 py-8 text-sm text-ink-muted">{t('detail.noExecutions')}</p>
         )}
       </div>
     </div>
