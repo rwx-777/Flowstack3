@@ -126,9 +126,9 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   const accessToken = decryptText(user.msGraphAccessToken);
   const refreshToken = decryptText(user.msGraphRefreshToken);
 
-  // Refresh if token is expired or will expire within 5 minutes
+  // Return cached token if it's still valid for at least 5 more minutes
   const bufferMs = 5 * 60 * 1000;
-  if (user.msGraphTokenExpiry && user.msGraphTokenExpiry.getTime() - bufferMs > Date.now()) {
+  if (user.msGraphTokenExpiry && user.msGraphTokenExpiry.getTime() > Date.now() + bufferMs) {
     return accessToken;
   }
 
