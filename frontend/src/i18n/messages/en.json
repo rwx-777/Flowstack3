@@ -45,7 +45,8 @@
     },
     "sections": {
       "recentExecutions": "Recent executions",
-      "upcomingEvents": "Upcoming events"
+      "upcomingEvents": "Upcoming events",
+      "viewAll": "View all"
     }
   },
   "workflows": {
@@ -63,10 +64,16 @@
       "email": "Email", "error": "Error trigger", "sub-workflow": "Sub-workflow", "unknown": "Unknown"
     },
     "columns": {
-      "name": "Workflow", "trigger": "Trigger", "lastRun": "Last run",
+      "name": "Workflow", "category": "Category", "trigger": "Trigger", "lastRun": "Last run",
       "successRate": "Success", "active": "Status", "nodes": "Nodes"
     },
-    "status": { "active": "Active", "inactive": "Inactive" }
+    "status": { "active": "Active", "inactive": "Inactive" },
+    "actions": "Actions",
+    "relTime": {
+      "now": "now",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    }
   },
   "executions": {
     "title": "Executions",

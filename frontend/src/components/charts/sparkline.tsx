@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 interface SparklineProps {
   values: readonly number[];
   min?: number;
@@ -21,13 +23,14 @@ export function Sparkline({
   height = 32,
   className,
 }: SparklineProps) {
+  const id = useId();
   if (values.length === 0) return null;
   const pad = 2;
   const x = (i: number) => pad + (i / (values.length - 1)) * (width - 2 * pad);
   const y = (v: number) => pad + (1 - (v - min) / (max - min)) * (height - 2 * pad);
   const path = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(v)}`).join(' ');
   const area = `${path} L${x(values.length - 1)},${height - pad} L${x(0)},${height - pad} Z`;
-  const gradId = `spark-grad-${Math.random().toString(36).slice(2, 10)}`;
+  const gradId = `spark-grad-${id.replace(/:/g, '')}`;
 
   return (
     <svg

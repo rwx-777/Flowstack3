@@ -186,7 +186,7 @@ export default function OverviewPage() {
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <h2 className="text-base font-semibold text-ink">{t('sections.recentExecutions')}</h2>
                 <Link href="/executions" className="text-xs font-semibold text-primary hover:underline">
-                  Alle ansehen
+                  {t('sections.viewAll')}
                 </Link>
               </div>
               {execsLoading || !executions ? (

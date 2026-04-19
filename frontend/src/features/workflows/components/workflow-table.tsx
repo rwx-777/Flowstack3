@@ -33,11 +33,11 @@ function fmtDuration(ms: number): string {
   return `${(ms / 60_000).toFixed(1)} min`;
 }
 
-function relTimeHours(h: number | null): string {
+function relTimeHours(h: number | null, t: ReturnType<typeof useTranslations>): string {
   if (h === null) return '—';
-  if (h < 1) return 'jetzt';
-  if (h < 24) return `vor ${Math.round(h)} Std`;
-  return `vor ${Math.round(h / 24)} T`;
+  if (h < 1) return t('relTime.now' as 'relTime.now');
+  if (h < 24) return t('relTime.hoursAgo' as 'relTime.hoursAgo', { count: Math.round(h) });
+  return t('relTime.daysAgo' as 'relTime.daysAgo', { count: Math.round(h / 24) });
 }
 
 /**
@@ -90,7 +90,7 @@ export function WorkflowTable({ workflows, activeCategory }: WorkflowTableProps)
           <tr className="border-b border-border bg-surface-muted">
             <th scope="col" className="w-10 px-3 py-3" />
             <th scope="col" className="label-xs px-4 py-3 text-left">{t('columns.name')}</th>
-            <th scope="col" className="label-xs px-4 py-3 text-left">Kategorie</th>
+            <th scope="col" className="label-xs px-4 py-3 text-left">{t('columns.category')}</th>
             <th scope="col" className="label-xs px-4 py-3 text-left">{t('columns.trigger')}</th>
             <th scope="col" className="label-xs px-4 py-3 text-left">{t('columns.lastRun')}</th>
             <th scope="col" className="label-xs px-4 py-3 text-left">{t('columns.successRate')}</th>
@@ -133,6 +133,7 @@ export function WorkflowTable({ workflows, activeCategory }: WorkflowTableProps)
                 TrendIcon={TrendIcon}
                 trendColor={trendColor}
                 sparkColor={sparkColor}
+                t={t}
               />
             );
           })}
@@ -157,6 +158,7 @@ interface RowProps {
   TrendIcon: typeof ArrowUpRight;
   trendColor: string;
   sparkColor: string;
+  t: ReturnType<typeof useTranslations>;
 }
 
 function ExpandableWorkflowRow({
@@ -174,6 +176,7 @@ function ExpandableWorkflowRow({
   TrendIcon,
   trendColor,
   sparkColor,
+  t,
 }: RowProps) {
   const lastRunHours = w.lastRunAt ? (Date.now() - new Date(w.lastRunAt).getTime()) / 3_600_000 : null;
   return (
@@ -204,7 +207,7 @@ function ExpandableWorkflowRow({
           </span>
         </td>
         <td className="px-4 py-4 text-xs text-ink-muted">{triggerLabel}</td>
-        <td className="px-4 py-4 text-xs text-ink-muted">{relTimeHours(lastRunHours)}</td>
+        <td className="px-4 py-4 text-xs text-ink-muted">{relTimeHours(lastRunHours, t)}</td>
         <td className="px-4 py-4">
           <span className={cn('nums text-sm font-semibold', successClass)}>{successPct} %</span>
         </td>
@@ -212,19 +215,19 @@ function ExpandableWorkflowRow({
           {w.active ? (
             <span className="inline-flex items-center gap-1.5 rounded-md bg-success-soft px-2 py-1 text-[11px] font-semibold text-success">
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              Aktiv
+              {t('status.active')}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-muted px-2 py-1 text-[11px] font-semibold text-ink-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-ink-subtle" />
-              Inaktiv
+              {t('status.inactive')}
             </span>
           )}
         </td>
         <td className="px-6 py-4 text-right">
           <button
             onClick={(e) => e.stopPropagation()}
-            aria-label="Aktionen"
+            aria-label={t('actions')}
             className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <MoreHorizontal size={14} aria-hidden="true" />

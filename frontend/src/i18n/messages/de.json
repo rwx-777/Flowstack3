@@ -45,7 +45,8 @@
     },
     "sections": {
       "recentExecutions": "Letzte Ausführungen",
-      "upcomingEvents": "Anstehende Termine"
+      "upcomingEvents": "Anstehende Termine",
+      "viewAll": "Alle ansehen"
     }
   },
   "workflows": {
@@ -69,13 +70,20 @@
     },
     "columns": {
       "name": "Workflow",
+      "category": "Kategorie",
       "trigger": "Trigger",
       "lastRun": "Letzte Ausführung",
       "successRate": "Erfolg",
       "active": "Status",
       "nodes": "Knoten"
     },
-    "status": { "active": "Aktiv", "inactive": "Inaktiv" }
+    "status": { "active": "Aktiv", "inactive": "Inaktiv" },
+    "actions": "Aktionen",
+    "relTime": {
+      "now": "jetzt",
+      "hoursAgo": "vor {count} Std",
+      "daysAgo": "vor {count} T"
+    }
   },
   "executions": {
     "title": "Ausführungen",
