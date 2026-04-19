@@ -3,8 +3,16 @@ import jwt from "jsonwebtoken";
 import { randomUUID } from "crypto";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
+import {
+  exchangeCodeForTokens,
+  getGraphUserProfile,
+  saveTokensToUser,
+} from "../services/graph.js";
 
 export const authRouter = Router();
+
+const OAUTH_SCOPES =
+  "openid profile email offline_access User.Read Mail.Read Mail.Send Calendars.ReadWrite";
 
 authRouter.get("/login", (_req, res) => {
   const params = new URLSearchParams({
@@ -12,7 +20,7 @@ authRouter.get("/login", (_req, res) => {
     response_type: "code",
     redirect_uri: env.MICROSOFT_REDIRECT_URI,
     response_mode: "query",
-    scope: "openid profile email offline_access User.Read Mail.Read Calendars.ReadWrite",
+    scope: OAUTH_SCOPES,
   });
 
   const authorizeUrl = `https://login.microsoftonline.com/${env.MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize?${params.toString()}`;
@@ -21,6 +29,47 @@ authRouter.get("/login", (_req, res) => {
 
 authRouter.get("/callback", async (req, res, next) => {
   try {
+    const code = req.query.code as string | undefined;
+
+    // ── Real OAuth flow (authorization code present) ────────────────────
+    if (code) {
+      const tokens = await exchangeCodeForTokens(code);
+      const profile = await getGraphUserProfile(tokens.access_token);
+
+      const email = profile.mail || profile.userPrincipalName;
+      const tenantName = env.MICROSOFT_TENANT_ID === "common" ? "Default" : env.MICROSOFT_TENANT_ID;
+
+      const tenant = await prisma.tenant.upsert({
+        where: { name: tenantName },
+        update: {},
+        create: { id: randomUUID(), name: tenantName },
+      });
+
+      const user = await prisma.user.upsert({
+        where: { email_tenantId: { email, tenantId: tenant.id } },
+        update: { displayName: profile.displayName },
+        create: {
+          id: randomUUID(),
+          tenantId: tenant.id,
+          email,
+          role: "user",
+          displayName: profile.displayName,
+        },
+      });
+
+      await saveTokensToUser(user.id, tokens);
+
+      const jwtToken = jwt.sign(
+        { userId: user.id, tenantId: tenant.id, email: user.email, role: user.role },
+        env.JWT_SECRET,
+        { expiresIn: "8h" },
+      );
+
+      res.redirect(`${env.FRONTEND_URL}?token=${jwtToken}`);
+      return;
+    }
+
+    // ── Demo / fallback flow (no code — local development) ──────────────
     const email = (req.query.email as string) ?? "demo.user@contoso.com";
     const tenantName = (req.query.tenant as string) ?? "Demo Organization";
     const role = req.query.role === "admin" ? "admin" : "user";
@@ -28,7 +77,7 @@ authRouter.get("/callback", async (req, res, next) => {
     const tenant = await prisma.tenant.upsert({
       where: { name: tenantName },
       update: {},
-      create: { id: randomUUID(), name: tenantName }
+      create: { id: randomUUID(), name: tenantName },
     });
 
     const user = await prisma.user.upsert({
@@ -39,19 +88,14 @@ authRouter.get("/callback", async (req, res, next) => {
         tenantId: tenant.id,
         email,
         role,
-        displayName: email.split("@")[0]
-      }
+        displayName: email.split("@")[0],
+      },
     });
 
     const token = jwt.sign(
-      {
-        userId: user.id,
-        tenantId: tenant.id,
-        email: user.email,
-        role: user.role
-      },
+      { userId: user.id, tenantId: tenant.id, email: user.email, role: user.role },
       env.JWT_SECRET,
-      { expiresIn: "8h" }
+      { expiresIn: "8h" },
     );
 
     res.json({ token, user });
