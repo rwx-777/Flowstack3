@@ -21,8 +21,8 @@ services:
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/flowstack3
-      JWT_SECRET: replace-with-at-least-32-chars
-      ENCRYPTION_KEY: replace-with-at-least-32-chars
+      JWT_SECRET: dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION
+      ENCRYPTION_KEY: dev-encrypt-key-DO-NOT-USE-IN-PRODUCTION
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
@@ -42,8 +42,8 @@ services:
     command: npm run worker
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/flowstack3
-      JWT_SECRET: replace-with-at-least-32-chars
-      ENCRYPTION_KEY: replace-with-at-least-32-chars
+      JWT_SECRET: dev-jwt-secret-DO-NOT-USE-IN-PRODUCTION
+      ENCRYPTION_KEY: dev-encrypt-key-DO-NOT-USE-IN-PRODUCTION
       REDIS_URL: redis://redis:6379
       QUEUE_INLINE_MODE: "false"
     depends_on:
