@@ -230,3 +230,54 @@ export async function replyToOutlookMessage(
     throw new Error(`Graph reply failed (${res.status}): ${await res.text()}`);
   }
 }
+
+// ── Calendar (Outlook) ─────────────────────────────────────────────────────
+
+export interface GraphCalendarEvent {
+  id: string;
+  subject: string;
+  start: { dateTime: string; timeZone: string };
+  end: { dateTime: string; timeZone: string };
+  location?: { displayName?: string };
+  attendees?: Array<{
+    emailAddress: { name?: string; address: string };
+  }>;
+  isAllDay?: boolean;
+}
+
+interface GraphCalendarListResponse {
+  value: GraphCalendarEvent[];
+  "@odata.nextLink"?: string;
+}
+
+/**
+ * Fetch upcoming calendar events from Outlook via Microsoft Graph.
+ */
+export async function fetchOutlookCalendarEvents(
+  accessToken: string,
+  daysAhead = 30,
+): Promise<GraphCalendarEvent[]> {
+  const now = new Date();
+  const future = new Date(now.getTime() + daysAhead * 24 * 3600_000);
+  const startISO = now.toISOString();
+  const endISO = future.toISOString();
+
+  const url =
+    `${GRAPH_BASE}/me/calendarView` +
+    `?startDateTime=${encodeURIComponent(startISO)}` +
+    `&endDateTime=${encodeURIComponent(endISO)}` +
+    `&$top=100` +
+    `&$select=id,subject,start,end,location,attendees,isAllDay` +
+    `&$orderby=start/dateTime`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Graph /me/calendarView failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as GraphCalendarListResponse;
+  return data.value;
+}

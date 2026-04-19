@@ -105,6 +105,8 @@
     "today": "Today",
     "noEvents": "No events scheduled.",
     "linkedWorkflow": "Linked workflow",
+    "sync": "Sync Outlook",
+    "syncing": "Syncing…",
     "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
   "tasks": {

@@ -91,6 +91,8 @@ model Event {
   title           String
   startTime       DateTime
   endTime         DateTime
+  location        String?
+  outlookEventId  String?    @unique
   createdByUserId String
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt

@@ -126,6 +126,8 @@
     "today": "Heute",
     "noEvents": "Keine Termine geplant.",
     "linkedWorkflow": "Verknüpfter Workflow",
+    "sync": "Outlook synchronisieren",
+    "syncing": "Wird synchronisiert…",
     "days": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
   },
   "tasks": {
