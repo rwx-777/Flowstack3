@@ -9,7 +9,9 @@
     "settings": "Einstellungen",
     "signOut": "Abmelden",
     "search": "Suchen…",
-    "toggleTheme": "Theme wechseln"
+    "toggleTheme": "Theme wechseln",
+    "notifications": "Benachrichtigungen",
+    "newWorkflow": "Neuer Workflow"
   },
   "auth": {
     "login": {

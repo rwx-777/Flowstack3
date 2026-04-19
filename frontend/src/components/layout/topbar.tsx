@@ -30,7 +30,7 @@ export function Topbar() {
       </div>
       <div className="flex items-center gap-2">
         <button
-          aria-label="Benachrichtigungen"
+          aria-label={t('notifications')}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
         >
           <Bell size={16} aria-hidden="true" />
@@ -39,7 +39,7 @@ export function Topbar() {
         <div aria-hidden="true" className="mx-2 h-5 w-px bg-border" />
         <Button size="md" className="gap-2">
           <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
-          Neuer Workflow
+          {t('newWorkflow')}
         </Button>
       </div>
     </header>
