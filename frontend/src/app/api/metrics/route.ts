@@ -11,11 +11,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!can(session.user.role, 'workflows.read')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  const range = req.nextUrl.searchParams.get('range') ?? '24h';
+
   if (isBackendConfigured()) {
     const raw = await getToken({ req, raw: true });
     if (raw) {
       try {
-        const data = await backendFetch<unknown>('/metrics', raw);
+        const data = await backendFetch<unknown>(`/metrics?range=${encodeURIComponent(range)}`, raw);
         return NextResponse.json(data, { headers: { 'Cache-Control': 'private, max-age=30' } });
       } catch {
         /* fall through to mock data */

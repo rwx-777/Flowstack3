@@ -2,12 +2,14 @@
 
 import { useState, type FormEvent } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { CheckCircle2, Circle, Clock, Plus, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { CheckCircle2, Circle, Clock, Plus, Loader2, Trash2, User } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useTasks, useCreateTask, useUpdateTask, type Task } from '@/features/tasks/hooks';
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, type Task } from '@/features/tasks/hooks';
 
 const STATUS_ICON = {
   open: Circle,
@@ -26,16 +28,36 @@ function formatDate(iso: string | null, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+interface TenantUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+function useUsers() {
+  return useQuery({
+    queryKey: ['settings-users'],
+    queryFn: async (): Promise<TenantUser[]> => {
+      const { data } = await axios.get<{ users: TenantUser[] }>('/api/settings/users');
+      return data.users;
+    },
+    staleTime: 60_000,
+  });
+}
+
 export function TaskList() {
   const t = useTranslations('tasks');
   const locale = useLocale();
   const { data: tasks, isLoading, error } = useTasks();
+  const { data: users } = useUsers();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [assignedUserId, setAssignedUserId] = useState('');
 
   function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -44,11 +66,13 @@ export function TaskList() {
       {
         title: title.trim(),
         ...(dueDate ? { dueDate: new Date(dueDate).toISOString() } : {}),
+        ...(assignedUserId ? { assignedUserId } : {}),
       },
       {
         onSuccess: () => {
           setTitle('');
           setDueDate('');
+          setAssignedUserId('');
           setShowForm(false);
         },
       },
@@ -62,6 +86,16 @@ export function TaskList() {
       done: 'open',
     };
     updateTask.mutate({ id: task.id, status: next[task.status] });
+  }
+
+  function handleDelete(task: Task) {
+    deleteTask.mutate(task.id);
+  }
+
+  function getUserName(userId: string | null): string | null {
+    if (!userId || !users) return null;
+    const user = users.find((u) => u.id === userId);
+    return user?.name ?? null;
   }
 
   if (error) {
@@ -117,6 +151,23 @@ export function TaskList() {
               className="flex h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
+          {users && users.length > 0 && (
+            <div className="w-48">
+              <label className="mb-1.5 block text-xs font-medium text-ink">{t('fields.assignee')}</label>
+              <select
+                value={assignedUserId}
+                onChange={(e) => setAssignedUserId(e.target.value)}
+                className="flex h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">{t('fields.unassigned')}</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <Button type="submit" disabled={createTask.isPending || !title.trim()}>
             {createTask.isPending ? t('creating') : t('create')}
           </Button>
@@ -142,6 +193,7 @@ export function TaskList() {
           <ul className="divide-y divide-border">
             {sorted.map((task) => {
               const Icon = STATUS_ICON[task.status];
+              const assigneeName = getUserName(task.assignedUserId);
               return (
                 <li
                   key={task.id}
@@ -163,11 +215,25 @@ export function TaskList() {
                     >
                       {task.title}
                     </p>
+                    {assigneeName && (
+                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-muted">
+                        <User size={10} aria-hidden="true" />
+                        {assigneeName}
+                      </p>
+                    )}
                   </div>
                   <span className="hidden text-xs text-ink-muted sm:inline">
                     {formatDate(task.dueDate, locale)}
                   </span>
                   <Badge variant={STATUS_TONE[task.status]}>{t(`status.${task.status}`)}</Badge>
+                  <button
+                    onClick={() => handleDelete(task)}
+                    disabled={deleteTask.isPending}
+                    className="shrink-0 text-ink-muted transition-colors hover:text-red-500 disabled:opacity-50"
+                    aria-label={t('delete')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </li>
               );
             })}

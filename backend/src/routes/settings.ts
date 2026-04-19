@@ -96,6 +96,40 @@ settingsRouter.patch("/users/:id", async (req, res, next) => {
 });
 
 /**
+ * DELETE /settings/users/:id — Remove a user from the tenant.
+ * Only admins can do this. Cannot delete yourself.
+ */
+settingsRouter.delete("/users/:id", async (req, res, next) => {
+  try {
+    if (req.auth!.role !== "admin") {
+      res.status(403).json({ error: "Forbidden: admin role required" });
+      return;
+    }
+
+    const userId = String(req.params.id);
+
+    if (userId === req.auth!.userId) {
+      res.status(400).json({ error: "Cannot delete your own account" });
+      return;
+    }
+
+    const existing = await prisma.user.findFirst({
+      where: { id: userId, tenantId: req.auth!.tenantId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    await prisma.user.delete({ where: { id: userId } });
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /settings/tenant — Get tenant details.
  */
 settingsRouter.get("/tenant", async (req, res, next) => {

@@ -140,9 +140,12 @@
     "emptyHint": "Erstellen Sie eine neue Aufgabe oder verbinden Sie das Backend, um Aufgaben aus Workflows zu sehen.",
     "backendRequired": "Backend nicht erreichbar. Bitte starten Sie die Backend-API, um Aufgaben zu verwalten.",
     "cycleStatus": "Status ändern",
+    "delete": "Aufgabe löschen",
     "fields": {
       "title": "Titel",
-      "dueDate": "Fälligkeitsdatum"
+      "dueDate": "Fälligkeitsdatum",
+      "assignee": "Zugewiesen an",
+      "unassigned": "Nicht zugewiesen"
     },
     "status": {
       "open": "Offen",
@@ -189,7 +192,10 @@
     "editRole": "Rolle ändern",
     "saveRole": "Speichern",
     "saving": "Speichert…",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "deleteUser": "Benutzer löschen",
+    "confirmDelete": "Sicher?",
+    "confirm": "Bestätigen"
   },
   "loading": "Lädt…"
 }

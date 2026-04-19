@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { z } from 'zod';
-import { Users, Building2, Shield, Pencil, X, Check } from 'lucide-react';
+import { Users, Building2, Shield, Pencil, X, Check, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -121,6 +121,56 @@ function UserRoleCell({ user }: { user: User }) {
   );
 }
 
+function UserDeleteButton({ userId }: { userId: string }) {
+  const tSettings = useTranslations('settings');
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await axios.delete(`/api/settings/users/${id}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['settings-tenant'] });
+      setConfirming(false);
+    },
+  });
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-ink-muted">{tSettings('confirmDelete')}</span>
+        <button
+          onClick={() => deleteMutation.mutate(userId)}
+          disabled={deleteMutation.isPending}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950 disabled:opacity-50"
+          aria-label={tSettings('confirm')}
+        >
+          <Check size={14} />
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+          aria-label={tSettings('cancel')}
+        >
+          <X size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-muted hover:text-red-500"
+      aria-label={tSettings('deleteUser')}
+    >
+      <Trash2 size={14} />
+    </button>
+  );
+}
+
 export default function SettingsPage() {
   const t = useTranslations('nav');
   const tSettings = useTranslations('settings');
@@ -205,6 +255,7 @@ export default function SettingsPage() {
                   <th className="px-6 py-3 text-xs font-semibold text-ink-muted">{tSettings('email')}</th>
                   <th className="px-6 py-3 text-xs font-semibold text-ink-muted">{tSettings('role')}</th>
                   <th className="px-6 py-3 text-xs font-semibold text-ink-muted">{tSettings('joined')}</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-ink-muted">{tSettings('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -229,6 +280,9 @@ export default function SettingsPage() {
                     </td>
                     <td className="nums px-6 py-3.5 text-ink-muted">
                       {new Date(user.createdAt).toLocaleDateString(locale)}
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <UserDeleteButton userId={user.id} />
                     </td>
                   </tr>
                 ))}

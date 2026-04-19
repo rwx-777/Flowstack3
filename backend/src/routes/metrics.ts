@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { apiRateLimit } from "../middleware/rateLimit.js";
@@ -7,38 +8,69 @@ export const metricsRouter = Router();
 metricsRouter.use(apiRateLimit);
 metricsRouter.use(requireAuth);
 
+const rangeSchema = z.enum(["24h", "7d", "30d", "90d"]).default("24h");
+
+const RANGE_HOURS: Record<string, number> = {
+  "24h": 24,
+  "7d": 168,
+  "30d": 720,
+  "90d": 2160,
+};
+
 /**
  * GET /metrics — Aggregate dashboard metrics for the authenticated tenant.
- * Returns: activeWorkflows, executions24h, successRate, upcomingDeadlines,
- *          30-day timeseries
+ * Query params:
+ *   range = 24h | 7d | 30d | 90d (default 24h)
+ *
+ * Returns: activeWorkflows, executions, successRate, upcomingDeadlines,
+ *          30-day timeseries. changePercent is computed as period-over-period.
  */
 metricsRouter.get("/", async (req, res, next) => {
   try {
     const tenantId = req.auth!.tenantId;
+    const range = rangeSchema.parse(req.query.range);
+    const rangeMs = RANGE_HOURS[range] * 3600_000;
+
     const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 3600_000);
+    const periodStart = new Date(now.getTime() - rangeMs);
+    const prevPeriodStart = new Date(now.getTime() - rangeMs * 2);
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 3600_000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3600_000);
 
     const [
       totalWorkflows,
       activeWorkflows,
-      executions24h,
-      completedSuccess24h,
-      completedError24h,
+      prevActiveWorkflows,
+      executionsCurrent,
+      executionsPrev,
+      successCurrent,
+      errorCurrent,
+      successPrev,
+      errorPrev,
       upcomingDeadlines,
       last30dExecutions,
     ] = await Promise.all([
       prisma.workflow.count({ where: { tenantId } }),
       prisma.workflow.count({ where: { tenantId, active: true } }),
+      // For workflows, changePercent = current vs total (no historical snapshot)
+      prisma.workflow.count({ where: { tenantId } }),
       prisma.workflowExecution.count({
-        where: { tenantId, startedAt: { gte: oneDayAgo } },
+        where: { tenantId, startedAt: { gte: periodStart } },
       }),
       prisma.workflowExecution.count({
-        where: { tenantId, startedAt: { gte: oneDayAgo }, status: "success" },
+        where: { tenantId, startedAt: { gte: prevPeriodStart, lt: periodStart } },
       }),
       prisma.workflowExecution.count({
-        where: { tenantId, startedAt: { gte: oneDayAgo }, status: "error" },
+        where: { tenantId, startedAt: { gte: periodStart }, status: "success" },
+      }),
+      prisma.workflowExecution.count({
+        where: { tenantId, startedAt: { gte: periodStart }, status: "error" },
+      }),
+      prisma.workflowExecution.count({
+        where: { tenantId, startedAt: { gte: prevPeriodStart, lt: periodStart }, status: "success" },
+      }),
+      prisma.workflowExecution.count({
+        where: { tenantId, startedAt: { gte: prevPeriodStart, lt: periodStart }, status: "error" },
       }),
       prisma.event.count({
         where: {
@@ -75,16 +107,40 @@ metricsRouter.get("/", async (req, res, next) => {
       successes: data.successes,
     }));
 
-    const completed24h = completedSuccess24h + completedError24h;
-    const successRate = completed24h === 0 ? 1 : completedSuccess24h / completed24h;
+    // Compute real changePercent (period-over-period)
+    function changePercent(current: number, previous: number): number {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 1000) / 10;
+    }
 
-    // changePercent values are placeholders — replace with historical comparisons
-    // when the data volume justifies week-over-week or day-over-day calculations.
+    const completedCurrent = successCurrent + errorCurrent;
+    const completedPrev = successPrev + errorPrev;
+    const successRateCurrent = completedCurrent === 0 ? 1 : successCurrent / completedCurrent;
+    const successRatePrev = completedPrev === 0 ? 1 : successPrev / completedPrev;
+
+    // For workflows changePercent: active/total ratio — since we don't snapshot history,
+    // report 0 when there are no workflows, otherwise (active/total)*100 as a "health" indicator
+    const workflowChangePercent = totalWorkflows > 0
+      ? changePercent(activeWorkflows, prevActiveWorkflows > 0 ? prevActiveWorkflows : activeWorkflows)
+      : 0;
+
     res.json({
-      activeWorkflows: { value: activeWorkflows, changePercent: totalWorkflows > 0 ? 2.4 : 0 },
-      executions24h: { value: executions24h, changePercent: 14.3 },
-      successRate: { value: successRate, changePercent: 1.8 },
-      upcomingDeadlines: { value: upcomingDeadlines, changePercent: -3.2 },
+      activeWorkflows: {
+        value: activeWorkflows,
+        changePercent: workflowChangePercent,
+      },
+      executions24h: {
+        value: executionsCurrent,
+        changePercent: changePercent(executionsCurrent, executionsPrev),
+      },
+      successRate: {
+        value: successRateCurrent,
+        changePercent: Math.round((successRateCurrent - successRatePrev) * 1000) / 10,
+      },
+      upcomingDeadlines: {
+        value: upcomingDeadlines,
+        changePercent: 0, // No historical comparison for upcoming events
+      },
       timeseries,
     });
   } catch (error) {

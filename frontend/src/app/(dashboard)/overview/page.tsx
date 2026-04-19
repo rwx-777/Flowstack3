@@ -35,10 +35,10 @@ const CATEGORY_TONE = {
 } as const;
 
 const TIME_RANGES = [
-  { label: '24 h', hours: 24 },
-  { label: '7 T', hours: 168 },
-  { label: '30 T', hours: 720 },
-  { label: '90 T', hours: 2160 },
+  { label: '24 h', hours: 24, key: '24h' },
+  { label: '7 T', hours: 168, key: '7d' },
+  { label: '30 T', hours: 720, key: '30d' },
+  { label: '90 T', hours: 2160, key: '90d' },
 ] as const;
 
 export default function OverviewPage() {
@@ -47,7 +47,8 @@ export default function OverviewPage() {
   const [selectedRange, setSelectedRange] = useState(0);
   const [calWeekOffset, setCalWeekOffset] = useState(0);
 
-  const { data: metrics, isLoading: metricsLoading } = useMetrics();
+  const rangeKey = TIME_RANGES[selectedRange]?.key ?? '24h';
+  const { data: metrics, isLoading: metricsLoading } = useMetrics(rangeKey);
   const { data: executions, isLoading: execsLoading } = useExecutions(50);
   const { data: events, isLoading: eventsLoading } = useCalendarEvents(60);
   const { data: workflows } = useWorkflows();

@@ -13,6 +13,30 @@ const updateTaskSchema = z.object({
   assignedUserId: z.string().optional(),
 });
 
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  const { id } = await params;
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!can(session.user.role, 'tasks.write')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  if (isBackendConfigured()) {
+    const raw = await getToken({ req, raw: true });
+    if (raw) {
+      try {
+        await backendFetch(`/tasks/${id}`, raw, { method: 'DELETE' });
+        return new NextResponse(null, { status: 204 });
+      } catch {
+        return NextResponse.json({ error: 'Backend unavailable' }, { status: 502 });
+      }
+    }
+  }
+
+  return NextResponse.json({ error: 'Backend not configured' }, { status: 503 });
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
