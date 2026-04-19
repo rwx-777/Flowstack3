@@ -1,13 +1,22 @@
 import type { NextAuthOptions } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import type { Provider } from 'next-auth/providers/index';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import bcrypt from 'bcryptjs';
+import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { loginSchema, userRoleSchema, type UserRole } from '@/lib/validation';
 import { findUserByEmail } from '@/server/services/user-service';
+
+/**
+ * Encode/decode NextAuth session tokens as plain JWS (signed-only) instead of
+ * the default JWE (encrypted). This allows the backend to verify the same token
+ * directly with the shared secret, eliminating the need for a bridge JWT layer.
+ */
+const jwtSecretBytes = new TextEncoder().encode(env.NEXTAUTH_SECRET);
 
 function buildProviders(): Provider[] {
   const providers: Provider[] = [
@@ -68,6 +77,23 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt', maxAge: 8 * 60 * 60 /* 8h */ },
   pages: { signIn: '/login', error: '/login' },
   providers: buildProviders(),
+  jwt: {
+    encode: async ({ token }) => {
+      if (!token) return '';
+      return new SignJWT({ ...token } as JWTPayload)
+        .setProtectedHeader({ alg: 'HS256' })
+        .sign(jwtSecretBytes);
+    },
+    decode: async ({ token }) => {
+      if (!token) return null;
+      try {
+        const { payload } = await jwtVerify(token, jwtSecretBytes);
+        return payload as JWT;
+      } catch {
+        return null;
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
