@@ -15,7 +15,10 @@ const envSchema = z.object({
   AZURE_AD_TENANT_ID: z.string().min(1).optional(),
   BACKEND_API_URL: z.string().url().optional(),
   BACKEND_JWT_SECRET: z.string().min(32).optional(),
-});
+}).refine(
+  (data) => !data.BACKEND_API_URL || data.BACKEND_JWT_SECRET,
+  { message: 'BACKEND_JWT_SECRET is required when BACKEND_API_URL is set', path: ['BACKEND_JWT_SECRET'] },
+);
 
 export type Env = z.infer<typeof envSchema>;
 

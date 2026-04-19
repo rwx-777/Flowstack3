@@ -18,7 +18,7 @@ export function sessionToBackendUser(session: Session): BackendUser | null {
 
   return {
     userId: user.id,
-    tenantId: (user as Record<string, unknown>).tenantId as string | undefined ?? DEFAULT_TENANT_ID,
+    tenantId: ((user as Record<string, unknown>).tenantId as string | undefined) ?? DEFAULT_TENANT_ID,
     email: user.email,
     role: user.role ?? 'read',
   };

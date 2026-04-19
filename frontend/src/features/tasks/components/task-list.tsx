@@ -81,8 +81,8 @@ export function TaskList() {
   }
 
   const sorted = [...(tasks ?? [])].sort((a, b) => {
-    const order = { open: 0, in_progress: 1, done: 2 };
-    return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+    const order: Record<string, number> = { open: 0, in_progress: 1, done: 2 };
+    return (order[a.status] ?? 0) - (order[b.status] ?? 0);
   });
 
   return (
