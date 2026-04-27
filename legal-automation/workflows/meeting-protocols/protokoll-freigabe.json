@@ -1,0 +1,258 @@
+{
+  "name": "Protokoll — Freigabe",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "205e4ccd-7c72-4aa6-bba3-a01bb90ad566",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/protocols/{{$json.protocolId}}/participants",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "8f9e55ab-a742-4feb-b6f7-20c3f8cacc87",
+      "name": "Teilnehmer laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_APPROVAL_SUBPROCESS_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "c733741f-5f7d-4bdf-a520-a5547d92bbb8",
+      "name": "Generischer Approval-Subprozess",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "8774203c-9000-4d3c-9c99-ed0931aba5d2",
+              "leftValue": "={{$json.approval.status}}",
+              "rightValue": "approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2fcc5735-c3e1-4ceb-b664-bb315c600138",
+      "name": "Freigegeben?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/protocols/{{$json.protocolId}}/finalize",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "cdaec381-d4ca-415b-9ae8-05952318197a",
+      "name": "Protokoll finalisieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_PROTOKOLL_AUFGABEN_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "6d07b44f-9b39-4c65-b8e2-4a4ad22f0ad6",
+      "name": "Aufgaben-Extraktion",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Protokoll: Überarbeitung erforderlich",
+        "bodyContent": "<p>Bitte überarbeiten Sie das Protokoll zu {{$json.meeting.title}}.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.author.email}}",
+        "additionalFields": {}
+      },
+      "id": "01812c88-7660-4f9b-b2d3-29fb74279791",
+      "name": "Überarbeitung anfordern",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Teilnehmer laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teilnehmer laden": {
+      "main": [
+        [
+          {
+            "node": "Generischer Approval-Subprozess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generischer Approval-Subprozess": {
+      "main": [
+        [
+          {
+            "node": "Freigegeben?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Freigegeben?": {
+      "main": [
+        [
+          {
+            "node": "Protokoll finalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Überarbeitung anfordern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Protokoll finalisieren": {
+      "main": [
+        [
+          {
+            "node": "Aufgaben-Extraktion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "995ca7dd-4c23-4de7-a565-bc3c9d8d36e8",
+  "id": "protokoll-freigabe",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "meeting"
+    },
+    {
+      "name": "approval"
+    }
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "name": "No-Show-Reaktion",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "49f2b6cd-4acc-48be-9cb8-5507e7200260",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/calendar/events/{{$json.eventId}}/no-show",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "reason",
+              "value": "auto-detected"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "8470c9da-2307-49e3-a6e8-b76a2ab05abe",
+      "name": "No-Show vermerken",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Wir haben Sie heute vermisst",
+        "bodyContent": "<p>Sie sind heute nicht zum Termin erschienen. Bitte melden Sie sich für einen neuen Termin.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "7b0e08a6-f437-43b8-b8d8-ce85ad8e2fb4",
+      "name": "Mandant kontaktieren",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/tasks",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "No-Show nachfassen"
+            },
+            {
+              "name": "caseId",
+              "value": "={{$json.caseId}}"
+            },
+            {
+              "name": "dueInDays",
+              "value": 3
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "3aa4311d-0f82-4643-aaa9-0ab7710f9a0f",
+      "name": "Folge-Aufgabe anlegen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f0bddea1-2065-48d7-a5dc-ff173629bd1d",
+              "leftValue": "={{$json.noShowCount}}",
+              "rightValue": 2,
+              "operator": {
+                "type": "string",
+                "operation": "largerEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c132f873-aa2e-453e-b6d7-5376c38ed9d0",
+      "name": "Wiederholt no-show?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/notifications",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "partner"
+            },
+            {
+              "name": "message",
+              "value": "Wiederholtes No-Show: {{$json.client.fullName}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "d7598e29-e087-431c-a275-d5ca6103a365",
+      "name": "Partner-Notiz",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "3980791a-da80-4cf6-a1df-aa3bd8dfa9c9",
+      "name": "Einmalig — kein Eskalations-Ping",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "No-Show vermerken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No-Show vermerken": {
+      "main": [
+        [
+          {
+            "node": "Mandant kontaktieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandant kontaktieren": {
+      "main": [
+        [
+          {
+            "node": "Folge-Aufgabe anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Folge-Aufgabe anlegen": {
+      "main": [
+        [
+          {
+            "node": "Wiederholt no-show?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wiederholt no-show?": {
+      "main": [
+        [
+          {
+            "node": "Partner-Notiz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Einmalig — kein Eskalations-Ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "b36d23c0-906c-4e74-9108-269df1fea5cf",
+  "id": "noshow-response",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "calendar"
+    }
+  ]
+}

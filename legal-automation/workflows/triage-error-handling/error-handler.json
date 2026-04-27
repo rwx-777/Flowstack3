@@ -1,0 +1,287 @@
+{
+  "name": "Zentraler Error-Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "9d010459-0f02-402b-9cab-7b6434ad223d",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0ef29542-24f8-4fa8-95f6-18441d2f52ba",
+              "name": "error.workflow",
+              "value": "={{$json.workflow.name}}",
+              "type": "string"
+            },
+            {
+              "id": "a415b572-ceb3-48a7-8c1d-2b1f76ddf8e1",
+              "name": "error.execution",
+              "value": "={{$json.execution.id}}",
+              "type": "string"
+            },
+            {
+              "id": "c06b16ff-cd23-4589-a606-b178099c4d3b",
+              "name": "error.message",
+              "value": "={{$json.execution.error.message}}",
+              "type": "string"
+            },
+            {
+              "id": "3bfac59b-5f83-43d1-80a7-779507c4f42f",
+              "name": "error.stack",
+              "value": "={{$json.execution.error.stack}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8dd2f8a9-8a1a-4da3-b48a-9458bf41faad",
+      "name": "Fehlerkontext anreichern",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/errors",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "workflow",
+              "value": "={{$json.error.workflow}}"
+            },
+            {
+              "name": "executionId",
+              "value": "={{$json.error.execution}}"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.error.message}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "ca55cc83-199c-4043-b372-a6613f915567",
+      "name": "Fehler in DB speichern",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f7807157-b19a-4bf9-8ce4-75f1607413f2",
+              "leftValue": "={{$json.error.workflow}}",
+              "rightValue": "fristen",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e1d6642f-2d31-4a7f-94d3-a0f8274e8908",
+      "name": "Kritischer Workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_SID}}/Messages.json",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "To",
+              "value": "={{$env.ONCALL_PHONE}}"
+            },
+            {
+              "name": "From",
+              "value": "={{$env.TWILIO_FROM}}"
+            },
+            {
+              "name": "Body",
+              "value": "Workflow-Fehler: {{$json.error.workflow}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Basic {{Buffer.from($env.TWILIO_SID + ':' + $env.TWILIO_AUTH_TOKEN).toString('base64')}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "d3ba12f2-c271-4c1c-a7a5-eb68c627ec13",
+      "name": "SMS an Bereitschaft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Workflow-Fehler: {{$json.error.workflow}}",
+        "bodyContent": "<pre>{{$json.error.message}}\n\n{{$json.error.stack}}</pre>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$env.OPS_EMAIL}}",
+        "additionalFields": {}
+      },
+      "id": "644d87dc-4999-4b8b-96f9-d54cba2754a8",
+      "name": "Fehler-Mail",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fehlerkontext anreichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehlerkontext anreichern": {
+      "main": [
+        [
+          {
+            "node": "Fehler in DB speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler in DB speichern": {
+      "main": [
+        [
+          {
+            "node": "Kritischer Workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kritischer Workflow?": {
+      "main": [
+        [
+          {
+            "node": "SMS an Bereitschaft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fehler-Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS an Bereitschaft": {
+      "main": [
+        [
+          {
+            "node": "Fehler-Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "54c00e20-6d9b-4886-942c-09aa3ff6b36b",
+  "id": "error-handler",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "error"
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "name": "No-Show-Erkennung",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "cd007a39-e89d-4682-9356-a4415905e325",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/calendar/events?status=past&attendance=unknown",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "0b2820ad-0e06-4aa9-8e14-12953445c082",
+      "name": "Vergangene Termine laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/calendar/events/{{$json.id}}/attendance",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "3da46824-bfd8-48f2-818c-6b97d0863bf4",
+      "name": "Outlook-Anwesenheit prüfen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "afc36243-338d-4ebf-8192-3e456ed3f4cb",
+              "leftValue": "={{$json.attended}}",
+              "rightValue": "false",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cb4f0fa4-7369-4377-b9e5-7a671a575cb3",
+      "name": "Mandant erschienen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_NOSHOW_RESPONSE_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "bbbf38ac-abe5-4a3d-bbf2-84843b967ea4",
+      "name": "No-Show-Reaktion auslösen",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8c4698d7-88c2-466a-b3eb-85d910f03a58",
+      "name": "Anwesend — keine Aktion",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Vergangene Termine laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vergangene Termine laden": {
+      "main": [
+        [
+          {
+            "node": "Outlook-Anwesenheit prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outlook-Anwesenheit prüfen": {
+      "main": [
+        [
+          {
+            "node": "Mandant erschienen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandant erschienen?": {
+      "main": [
+        [
+          {
+            "node": "No-Show-Reaktion auslösen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Anwesend — keine Aktion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "42e050f9-425e-403f-91fe-b25b7783db2d",
+  "id": "noshow-detection",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "calendar"
+    }
+  ]
+}

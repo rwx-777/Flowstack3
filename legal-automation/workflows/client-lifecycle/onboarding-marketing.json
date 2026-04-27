@@ -1,0 +1,361 @@
+{
+  "name": "Onboarding — Marketing-Nurture",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "aade8573-df38-4906-ac25-9cc95a0b1d18",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "3bd64aee-d9d9-4fec-a958-106e6863822c",
+              "leftValue": "={{$json.client.marketingOptIn}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2b3caf3b-6b5b-4340-a48a-af89bf49512a",
+      "name": "Marketing-Consent gegeben?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/crm/contacts/{{$json.client.id}}/tags",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tag",
+              "value": "marketing-opt-in"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "ea9e786f-f34e-4d83-b65e-f4a06e00d976",
+      "name": "CRM-Tag setzen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Willkommen — Ihre Kanzlei stellt sich vor",
+        "bodyContent": "<p>Sehr geehrte/r {{$json.client.fullName}}, willkommen…</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "df0b41f1-fef3-4aa2-960c-802dae080fdb",
+      "name": "Nurture #1 (Tag 0)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 7,
+        "unit": "days"
+      },
+      "id": "fa25f5ba-2edf-44fd-9e17-0bcf66f57e75",
+      "name": "7 Tage warten",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Tipps zu Ihrem Mandat",
+        "bodyContent": "<p>Hier einige Tipps…</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "11a59a15-776f-4211-9a54-c0dc79104c7e",
+      "name": "Nurture #2 (Tag 7)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/audit",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "marketing.optin"
+            },
+            {
+              "name": "subjectId",
+              "value": "={{$json.client.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "63fa44af-0616-4f03-beb7-c818ce1fa57f",
+      "name": "Audit-Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "71c9c7dd-d120-42b3-9d31-17eec1df8e7a",
+              "name": "audit.action",
+              "value": "marketing.optout",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f59b6df6-04d4-4570-969b-96d3d86700ec",
+      "name": "Opt-out vermerken",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/audit",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "marketing.optout"
+            },
+            {
+              "name": "subjectId",
+              "value": "={{$json.client.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "c213e12b-084c-40d9-96ac-19c20fe7adf2",
+      "name": "Opt-out loggen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Marketing-Consent gegeben?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marketing-Consent gegeben?": {
+      "main": [
+        [
+          {
+            "node": "CRM-Tag setzen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Opt-out vermerken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM-Tag setzen": {
+      "main": [
+        [
+          {
+            "node": "Nurture #1 (Tag 0)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nurture #1 (Tag 0)": {
+      "main": [
+        [
+          {
+            "node": "7 Tage warten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7 Tage warten": {
+      "main": [
+        [
+          {
+            "node": "Nurture #2 (Tag 7)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nurture #2 (Tag 7)": {
+      "main": [
+        [
+          {
+            "node": "Audit-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Opt-out vermerken": {
+      "main": [
+        [
+          {
+            "node": "Opt-out loggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "08d54214-ed0a-4da4-86c3-06290ecb55e0",
+  "id": "onboarding-marketing",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "marketing"
+    }
+  ]
+}

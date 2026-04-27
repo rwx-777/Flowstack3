@@ -1,0 +1,581 @@
+{
+  "name": "Eingangs-Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "id": "6b5829a5-e265-4c6a-80db-917b02e7140f",
+      "name": "Email Trigger (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Klassifiziere folgende E-Mail in genau eine Kategorie: onboarding, doc-request, deadline, review, protocol, other. Antwort: nur die Kategorie als Wort. Mail: Subject={{$json.subject}}, Body={{$json.text}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "eefa58b4-41a5-4c94-b84d-69872fbc771a",
+      "name": "Eingang klassifizieren",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "297a040c-6e26-459d-b003-0bee9f8ef91b",
+              "name": "category",
+              "value": "={{$json.message.content.trim().toLowerCase()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "17199d3b-8da5-4cce-9294-5e8929b86082",
+      "name": "Kategorie normalisieren",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "4fdc6a5b-091c-4da2-88c9-c26c98d58430",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "onboarding",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "onboarding"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "80dcfea7-6576-4148-b2a8-748076b4164c",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "doc-request",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "doc-request"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "a9a9efa3-b3e1-4587-a23b-63c2ea71b4ed",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "deadline",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "deadline"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "55cfecd7-adc0-4383-a8e9-876a25813ade",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "review",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "review"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "cd6cb44f-c084-4e56-8a65-369d4f804d84",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "protocol",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "protocol"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "cdc2e1e1-7286-4202-9ee4-cfa7b9f073fc",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "other",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "other"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "7e04c6d1-f55b-4428-8ff0-2d7044dcb092",
+      "name": "Routing",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_ONBOARDING_MAIN_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "fac9bcc2-d93a-48e2-85b3-d3479c698080",
+      "name": "→ Onboarding",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_DOC_REQUEST_MAIN_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "1812b7a3-5cf2-430e-83e9-6b35f45509fb",
+      "name": "→ Dokumentenanforderung",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_FRISTEN_PRUEFUNG_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "83ae2dbe-ef5c-45fc-98e3-73cb3a58ba4c",
+      "name": "→ Fristen",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_REVIEW_INTAKE_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "465626e0-5f5f-4097-8c99-3a76d94b227f",
+      "name": "→ Review",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_PROTOKOLL_ERSTELLUNG_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "6d20b00b-69a5-450e-98ae-5f2cd1a796b8",
+      "name": "→ Protokoll",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/inbox/unrouted",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "emailId",
+              "value": "={{$json.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "517b9062-7934-4629-aff1-2dd0d2d14f8a",
+      "name": "→ Sammelposteingang",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/audit",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "triage.routed"
+            },
+            {
+              "name": "category",
+              "value": "={{$json.category}}"
+            },
+            {
+              "name": "emailId",
+              "value": "={{$json.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "0766d1db-9a27-414b-9dab-68ad0f2f98c6",
+      "name": "Triage-Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Eingang klassifizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eingang klassifizieren": {
+      "main": [
+        [
+          {
+            "node": "Kategorie normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kategorie normalisieren": {
+      "main": [
+        [
+          {
+            "node": "Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing": {
+      "main": [
+        [
+          {
+            "node": "→ Onboarding",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "→ Dokumentenanforderung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "→ Fristen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "→ Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "→ Protokoll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "→ Sammelposteingang",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Onboarding": {
+      "main": [
+        [
+          {
+            "node": "Triage-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Dokumentenanforderung": {
+      "main": [
+        [
+          {
+            "node": "Triage-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Fristen": {
+      "main": [
+        [
+          {
+            "node": "Triage-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Review": {
+      "main": [
+        [
+          {
+            "node": "Triage-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Protokoll": {
+      "main": [
+        [
+          {
+            "node": "Triage-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Sammelposteingang": {
+      "main": [
+        [
+          {
+            "node": "Triage-Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "d3d36fdf-6bdb-4e97-b23f-223f38a50be5",
+  "id": "triage-main",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "triage"
+    },
+    {
+      "name": "routing"
+    }
+  ]
+}

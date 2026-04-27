@@ -1,0 +1,198 @@
+{
+  "name": "Bericht — Intern",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "25b3cf2b-49b0-4249-9025-71aa132a719d",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/reports/snapshots/latest",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "c4fe4cde-9c87-42f6-9d00-1b91939c79aa",
+      "name": "Snapshot laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Erstelle einen knappen Management-Report (Markdown, max 500 Wörter) aus diesen KPIs: {{$json}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "83092136-2172-4138-946b-6a8ba24b47d2",
+      "name": "Markdown-Report rendern",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/reports/recipients?audience=internal",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "b2c7f2b4-7d2c-4900-82f1-488a123dd1d8",
+      "name": "Verteiler laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Wöchentlicher Management-Report",
+        "bodyContent": "<pre>{{$json.message.content}}</pre>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.email}}",
+        "additionalFields": {}
+      },
+      "id": "0d748c38-fd8c-453a-9fa6-2a988450d259",
+      "name": "Wöchentlicher Management-Report",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Snapshot laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot laden": {
+      "main": [
+        [
+          {
+            "node": "Markdown-Report rendern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown-Report rendern": {
+      "main": [
+        [
+          {
+            "node": "Verteiler laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verteiler laden": {
+      "main": [
+        [
+          {
+            "node": "Wöchentlicher Management-Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "5e83cda4-a495-4a59-945f-c0cce6cc42eb",
+  "id": "bericht-intern",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "reporting"
+    }
+  ]
+}

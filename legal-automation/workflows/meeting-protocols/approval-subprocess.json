@@ -1,0 +1,456 @@
+{
+  "name": "Approval — Subprozess",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "7369ebca-cead-4b7f-b717-49e501e2b646",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/approvals/route",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "entityType",
+              "value": "={{$json.entityType}}"
+            },
+            {
+              "name": "entityId",
+              "value": "={{$json.entityId}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "6a286d7c-88de-4e13-b51a-dbd8bdb4d140",
+      "name": "Verantwortlichen ermitteln",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Freigabe erforderlich: {{$json.subject}}",
+        "bodyContent": "<p>Bitte freigeben: {{$json.approveUrl}}</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.approver.email}}",
+        "additionalFields": {}
+      },
+      "id": "d2306eae-d1e6-4055-ba9a-8c3444a9b6bb",
+      "name": "Freigabe anfragen",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "days"
+      },
+      "id": "9bfa6828-4016-45ba-99bd-52e2ec3edde7",
+      "name": "Auf Antwort warten",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/approvals/{{$json.approvalId}}",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "216858b8-ac05-4e7d-937f-e7c91229ca96",
+      "name": "Antwort prüfen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "7542d80e-df7f-4245-9692-037c000efe84",
+                    "leftValue": "={{$json.decision}}",
+                    "rightValue": "approved",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "1db7e5e9-73dc-4972-be7a-636620150aa5",
+                    "leftValue": "={{$json.decision}}",
+                    "rightValue": "rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "rejected"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "cb92220d-50ab-443e-b371-e12c9675f414",
+                    "leftValue": "={{$json.decision}}",
+                    "rightValue": "pending",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "pending"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "f34c4b4c-148b-4a87-8c93-6558da4c848a",
+      "name": "Antwort",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "05442617-a93d-4225-bf5f-78a303bc8c4f",
+              "name": "approval.status",
+              "value": "approved",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2a8e4ee5-48fa-43d6-994c-eecbe5789c13",
+      "name": "Status: Freigegeben",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1560,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6703fbea-f8a6-4809-884d-bd9b896e5fd9",
+              "name": "approval.status",
+              "value": "rejected",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1c3410c3-1d6b-408c-ba0b-cff1b1a8edbf",
+      "name": "Status: Abgelehnt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Erinnerung: Freigabe ausstehend",
+        "bodyContent": "<p>Bitte um Rückmeldung.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.approver.email}}",
+        "additionalFields": {}
+      },
+      "id": "9c1fe126-c672-42e8-a5e7-f3b7d582e359",
+      "name": "Nachfrage",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/approvals/{{$json.approvalId}}/finalize",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "={{$json.approval.status}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "d46669bf-bf41-4d25-908c-9c1f3f979b76",
+      "name": "Status zurückmelden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verantwortlichen ermitteln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verantwortlichen ermitteln": {
+      "main": [
+        [
+          {
+            "node": "Freigabe anfragen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Freigabe anfragen": {
+      "main": [
+        [
+          {
+            "node": "Auf Antwort warten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auf Antwort warten": {
+      "main": [
+        [
+          {
+            "node": "Antwort prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort prüfen": {
+      "main": [
+        [
+          {
+            "node": "Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort": {
+      "main": [
+        [
+          {
+            "node": "Status: Freigegeben",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status: Abgelehnt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nachfrage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status: Freigegeben": {
+      "main": [
+        [
+          {
+            "node": "Status zurückmelden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status: Abgelehnt": {
+      "main": [
+        [
+          {
+            "node": "Status zurückmelden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nachfrage": {
+      "main": [
+        [
+          {
+            "node": "Auf Antwort warten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "4619c07d-21e7-477b-98fb-bdf187ccf277",
+  "id": "approval-subprocess",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "meeting"
+    },
+    {
+      "name": "approval"
+    }
+  ]
+}

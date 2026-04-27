@@ -1,0 +1,401 @@
+{
+  "name": "Fristenprüfung",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "1a2aac6c-64f1-4792-a953-fb92d9e8fed2",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/deadlines?status=open",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "2e594dbe-41fb-48d6-8de4-119fba13ac84",
+      "name": "Offene Fristen laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "return items.map(({json}) => {\n  const due = new Date(json.dueDate);\n  const today = new Date();\n  const diffDays = Math.ceil((due - today) / 86400000);\n  return { json: { ...json, daysUntilDue: diffDays } };\n});"
+      },
+      "id": "85bff1fa-a9e5-4433-b3fb-5bc9784cf0ae",
+      "name": "Tage bis Frist berechnen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d51e677e-caf7-413c-88bb-171d4d6cb323",
+              "name": "category",
+              "value": "={{$json.daysUntilDue < 0 ? 'overdue' : ($json.daysUntilDue <= 3 ? 'soon' : 'upcoming')}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1455a98-8005-49f5-b8ea-a59cf5724bf4",
+      "name": "Kategorie zuweisen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "9044d247-f36d-4c9b-aab2-75e2ec592ce6",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "overdue",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "overdue"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "aae59a8a-fe00-4e2d-900c-bb8e7af191d7",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "soon",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "soon"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "08a3c966-03a6-4e0f-a34f-b9bb2d11920c",
+                    "leftValue": "={{$json.category}}",
+                    "rightValue": "upcoming",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "upcoming"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "c17876b7-327b-4d65-abd3-5a73909ef23c",
+      "name": "Routing",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_FRISTEN_ESKALATION_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "9257ef11-33ee-421c-8441-be278845f1f3",
+      "name": "Eskalation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_FRISTEN_ERINNERUNG_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "f0f10a35-5b19-4cf0-944e-f4e6b699a6ea",
+      "name": "Erinnerung",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a065af44-613f-42ac-b0c3-b6f37cba4e84",
+      "name": "OK — kein Handlungsbedarf",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/deadlines/{{$json.id}}/check",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{$json.category}}"
+            },
+            {
+              "name": "daysUntilDue",
+              "value": "={{$json.daysUntilDue}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "2f33daec-127c-4045-9028-3d79d778a709",
+      "name": "Status persistieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Offene Fristen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offene Fristen laden": {
+      "main": [
+        [
+          {
+            "node": "Tage bis Frist berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tage bis Frist berechnen": {
+      "main": [
+        [
+          {
+            "node": "Kategorie zuweisen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kategorie zuweisen": {
+      "main": [
+        [
+          {
+            "node": "Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing": {
+      "main": [
+        [
+          {
+            "node": "Eskalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erinnerung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OK — kein Handlungsbedarf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eskalation": {
+      "main": [
+        [
+          {
+            "node": "Status persistieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erinnerung": {
+      "main": [
+        [
+          {
+            "node": "Status persistieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OK — kein Handlungsbedarf": {
+      "main": [
+        [
+          {
+            "node": "Status persistieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "f56fde91-ec1e-4329-9443-b70af6099c14",
+  "id": "fristen-pruefung",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "deadline"
+    },
+    {
+      "name": "fristen"
+    }
+  ]
+}

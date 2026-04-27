@@ -1,0 +1,344 @@
+{
+  "name": "Onboarding — Signatur",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "974a43c9-0d5c-4727-98ad-e8691ca6bcaf",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "32e70d6e-5503-47bd-a324-659c37f87042",
+              "name": "docs.vollmacht",
+              "value": "vollmacht.pdf",
+              "type": "string"
+            },
+            {
+              "id": "995187f6-ecea-48e2-bce8-99bd2ebcc940",
+              "name": "docs.mandatsvertrag",
+              "value": "mandatsvertrag.pdf",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "85380361-4e16-40a8-913a-9327f7defb81",
+      "name": "Dokumente vorbereiten",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://demo.docusign.net/restapi/v2.1/accounts/{{$env.DOCUSIGN_ACCOUNT_ID}}/envelopes",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "emailSubject",
+              "value": "Bitte unterschreiben: Vollmacht & Mandatsvertrag"
+            },
+            {
+              "name": "status",
+              "value": "sent"
+            },
+            {
+              "name": "recipientEmail",
+              "value": "={{$json.client.email}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "1dbacd17-e4db-47c3-9d98-a073c684235e",
+      "name": "DocuSign Envelope erstellen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "hours"
+      },
+      "id": "46a1dfea-320c-4ca1-bc6c-e2655d6047ca",
+      "name": "Auf Signatur warten",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://demo.docusign.net/restapi/v2.1/accounts/{{$env.DOCUSIGN_ACCOUNT_ID}}/envelopes/{{$json.envelopeId}}",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "00bef262-deb0-414f-bf1e-ae18a4ffb8df",
+      "name": "Signatur-Status prüfen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "fc72427b-1734-4bed-a377-f75fe98f8ea4",
+              "leftValue": "={{$json.status}}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4e6519f7-ebd7-4391-acf0-bdadc8ddb3bc",
+      "name": "Signiert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/documents",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "caseId",
+              "value": "={{$json.case.id}}"
+            },
+            {
+              "name": "type",
+              "value": "vollmacht_signed"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "a068092f-3bfc-4aed-a596-cfafb1e74499",
+      "name": "PDF in DMS ablegen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Erinnerung: Bitte unterschreiben",
+        "bodyContent": "<p>Wir haben noch keine Signatur erhalten.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "e00b974f-505a-4d14-90a0-3baad86079a8",
+      "name": "Signatur-Reminder",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Dokumente vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dokumente vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "DocuSign Envelope erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DocuSign Envelope erstellen": {
+      "main": [
+        [
+          {
+            "node": "Auf Signatur warten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auf Signatur warten": {
+      "main": [
+        [
+          {
+            "node": "Signatur-Status prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signatur-Status prüfen": {
+      "main": [
+        [
+          {
+            "node": "Signiert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signiert?": {
+      "main": [
+        [
+          {
+            "node": "PDF in DMS ablegen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Signatur-Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signatur-Reminder": {
+      "main": [
+        [
+          {
+            "node": "Auf Signatur warten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "8e1020d7-710c-4298-95be-e7832288fdb8",
+  "id": "onboarding-signature",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "signature"
+    }
+  ]
+}

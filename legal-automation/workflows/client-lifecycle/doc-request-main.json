@@ -1,0 +1,404 @@
+{
+  "name": "Dokumentenanforderung — Hauptprozess",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "doc-request",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f9ecdc0e-de73-4a0f-9131-326dd4bf9fad",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f56fa7f-80b1-4392-aaaa-de02a1420b05",
+              "name": "request.caseId",
+              "value": "={{$json.body.caseId}}",
+              "type": "string"
+            },
+            {
+              "id": "f1622c00-06a3-4991-84a7-9105eb7305c7",
+              "name": "request.docs",
+              "value": "={{$json.body.requestedDocs}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6177f2d-b35a-4ffe-859d-3a6baabadf79",
+      "name": "Anfrage validieren",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_DOC_REQUEST_INTAKE_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "bc8ffc5a-aead-47cd-a471-b3eb6c487f2e",
+      "name": "Intake & Klassifikation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/uploads/links",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "caseId",
+              "value": "={{$json.request.caseId}}"
+            },
+            {
+              "name": "expiresInDays",
+              "value": 14
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "bd0462ab-31ee-4659-ae23-3aaf9c0f147b",
+      "name": "Upload-Link erzeugen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Bitte laden Sie folgende Unterlagen hoch",
+        "bodyContent": "<p>Bitte nutzen Sie diesen Link: {{$json.uploadUrl}}</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "6e8b0689-f151-4434-9f45-dd9517a0658c",
+      "name": "Link an Mandant senden",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "days"
+      },
+      "id": "5f498bb3-1b04-4e25-8cab-4d996e0e5d0f",
+      "name": "Wartezeit Upload",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/uploads/{{$json.linkId}}",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "6b119d78-b065-424c-b736-3b8a96bdd707",
+      "name": "Upload-Status prüfen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "555f3517-8b88-43f7-998d-54a72db32214",
+              "leftValue": "={{$json.status}}",
+              "rightValue": "received",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b20b402e-f0f8-47da-865b-914b99f35e92",
+      "name": "Hochgeladen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_DOC_REQUEST_PROCESSING_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "17307b52-15a3-4358-a834-1c7c58a55bac",
+      "name": "Verarbeitung",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_DOC_REQUEST_REMINDER_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "6303b9fe-9ff2-4708-8668-f0f5a15190c7",
+      "name": "Reminder-Subprocess",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {}
+      },
+      "id": "13498637-329b-4257-8b0b-b22c322a5a6e",
+      "name": "Webhook bestätigen",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Anfrage validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anfrage validieren": {
+      "main": [
+        [
+          {
+            "node": "Intake & Klassifikation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intake & Klassifikation": {
+      "main": [
+        [
+          {
+            "node": "Upload-Link erzeugen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload-Link erzeugen": {
+      "main": [
+        [
+          {
+            "node": "Link an Mandant senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link an Mandant senden": {
+      "main": [
+        [
+          {
+            "node": "Wartezeit Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wartezeit Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload-Status prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload-Status prüfen": {
+      "main": [
+        [
+          {
+            "node": "Hochgeladen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hochgeladen?": {
+      "main": [
+        [
+          {
+            "node": "Verarbeitung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reminder-Subprocess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verarbeitung": {
+      "main": [
+        [
+          {
+            "node": "Webhook bestätigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder-Subprocess": {
+      "main": [
+        [
+          {
+            "node": "Wartezeit Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "bc7ea12a-6eb0-4c34-a6cf-44f3feab5344",
+  "id": "doc-request-main",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "documents"
+    }
+  ]
+}

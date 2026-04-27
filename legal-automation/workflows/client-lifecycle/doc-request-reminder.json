@@ -1,0 +1,350 @@
+{
+  "name": "Dokumentenanforderung — Erinnerung",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b9ba1eb6-eb38-4fca-b300-3afec886e15f",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/document-requests?status=pending",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "0be71709-b3ce-4921-b9bd-1ad665d18a20",
+      "name": "Offene Anforderungen laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "f0470853-ae2b-4426-b933-256d3ebdc3a7",
+                    "leftValue": "={{$json.daysOpen}}",
+                    "rightValue": "3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "3"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "94f20f2b-72ff-47e2-b56f-cbf6ee4fbd10",
+                    "leftValue": "={{$json.daysOpen}}",
+                    "rightValue": "7",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "7"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "621a79eb-0baf-4221-b20b-f82b69e2b21f",
+                    "leftValue": "={{$json.daysOpen}}",
+                    "rightValue": "14",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "14"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "8c4a7158-834f-42c7-b678-b0662fe5eae0",
+      "name": "Tage seit Anforderung",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Erinnerung: Unterlagen",
+        "bodyContent": "<p>Bitte kurz checken.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "53b92e4c-004b-4e2b-b4d6-929ea2482f46",
+      "name": "Freundlicher Reminder (T+3)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Wir warten noch auf Ihre Unterlagen",
+        "bodyContent": "<p>Bitte zeitnah hochladen.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "62b06836-244a-4eb2-bfa8-7e048790219c",
+      "name": "Reminder (T+7)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Bitte dringend Unterlagen einreichen",
+        "bodyContent": "<p>Letzte Erinnerung.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "f9b5a716-c22b-4a86-b667-0cc2ee29e042",
+      "name": "Letzte Erinnerung (T+14)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/audit",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "doc-request.reminder"
+            },
+            {
+              "name": "requestId",
+              "value": "={{$json.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "75083c0e-2d16-47a6-9c48-0420afc70792",
+      "name": "Reminder loggen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Offene Anforderungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offene Anforderungen laden": {
+      "main": [
+        [
+          {
+            "node": "Tage seit Anforderung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tage seit Anforderung": {
+      "main": [
+        [
+          {
+            "node": "Freundlicher Reminder (T+3)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reminder (T+7)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Letzte Erinnerung (T+14)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Freundlicher Reminder (T+3)": {
+      "main": [
+        [
+          {
+            "node": "Reminder loggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder (T+7)": {
+      "main": [
+        [
+          {
+            "node": "Reminder loggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Letzte Erinnerung (T+14)": {
+      "main": [
+        [
+          {
+            "node": "Reminder loggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "1345b8e9-0016-482b-8305-6fd3572109ee",
+  "id": "doc-request-reminder",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "reminder"
+    }
+  ]
+}

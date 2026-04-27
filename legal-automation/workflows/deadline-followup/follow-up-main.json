@@ -1,0 +1,362 @@
+{
+  "name": "Follow-up — Hauptprozess",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "b7924e14-deda-4a17-9709-09e69abdfd65",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/follow-ups?status=open",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "30a376a5-d0ff-4bea-b7dc-6a7537d310e4",
+      "name": "Offene Follow-ups laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cdd2ede1-048e-46aa-82cf-e91eed1a5621",
+              "leftValue": "={{$json.dueAt}}",
+              "rightValue": "={{$now}}",
+              "operator": {
+                "type": "string",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "212378a0-f9ed-4d59-b9d9-1f93aff29811",
+      "name": "Fällig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Offenes Follow-up: {{$json.title}}",
+        "bodyContent": "<p>Bitte erledigen Sie das Follow-up zu {{$json.context}}.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.assignee.email}}",
+        "additionalFields": {}
+      },
+      "id": "1bb3a9ad-4f0f-4a18-98d9-8141cdbff84d",
+      "name": "Follow-up Erinnerung",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "days"
+      },
+      "id": "263ca45f-c22e-47ea-8351-380addc229d9",
+      "name": "Reaktionszeit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/follow-ups/{{$json.id}}",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "1e9b6cb3-ddce-4a64-8b3c-05732bc6ddf0",
+      "name": "Status prüfen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cf13b8ca-d1af-40b5-9d66-027b789e53de",
+              "leftValue": "={{$json.status}}",
+              "rightValue": "resolved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "aa954600-56c5-4f32-aa1a-429d0a3dc27d",
+      "name": "Gelöst?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/follow-ups/{{$json.id}}/close",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "8effe843-e43f-4caa-8e35-65d7aca885ef",
+      "name": "Follow-up schließen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_FOLLOW_UP_ESCALATION_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "1afbbd13-4e25-4816-a7c0-dcc9b6f6f725",
+      "name": "Eskalation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1780,
+        480
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "19d6c638-d3bb-4df3-82c8-7e14f169d3c1",
+      "name": "Noch nicht fällig",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Offene Follow-ups laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offene Follow-ups laden": {
+      "main": [
+        [
+          {
+            "node": "Fällig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fällig?": {
+      "main": [
+        [
+          {
+            "node": "Follow-up Erinnerung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Noch nicht fällig",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Follow-up Erinnerung": {
+      "main": [
+        [
+          {
+            "node": "Reaktionszeit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reaktionszeit": {
+      "main": [
+        [
+          {
+            "node": "Status prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status prüfen": {
+      "main": [
+        [
+          {
+            "node": "Gelöst?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gelöst?": {
+      "main": [
+        [
+          {
+            "node": "Follow-up schließen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Eskalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "1b817cc6-4f52-41e9-86ef-8fd89e8593e2",
+  "id": "follow-up-main",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "deadline"
+    },
+    {
+      "name": "follow-up"
+    }
+  ]
+}

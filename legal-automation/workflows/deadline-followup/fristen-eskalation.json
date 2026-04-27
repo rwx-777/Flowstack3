@@ -1,0 +1,284 @@
+{
+  "name": "Fristen — Eskalation",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "5c2e805d-e79f-40a7-9805-2e3bfdad1bc6",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/cases/{{$json.caseId}}/partner",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "69eb7f81-ed5a-426a-99e1-cf51fb75e2fa",
+      "name": "Verantwortlichen Partner laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_SID}}/Messages.json",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "To",
+              "value": "={{$json.partner.phone}}"
+            },
+            {
+              "name": "From",
+              "value": "={{$env.TWILIO_FROM}}"
+            },
+            {
+              "name": "Body",
+              "value": "Fristüberschreitung droht: {{$json.title}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Basic {{Buffer.from($env.TWILIO_SID + ':' + $env.TWILIO_AUTH_TOKEN).toString('base64')}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "022ed690-09a9-42ca-8401-d8ac3f59bdd6",
+      "name": "SMS-Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "ESKALATION: Frist droht zu verstreichen",
+        "bodyContent": "<p>Frist {{$json.title}} ({{$json.dueDate}}) — bitte sofort prüfen.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.partner.email}}",
+        "additionalFields": {}
+      },
+      "id": "8c4545b4-55ce-4f24-969b-6921c6f1c96c",
+      "name": "Eskalations-Mail",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/tasks",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "ESKALATION Frist"
+            },
+            {
+              "name": "caseId",
+              "value": "={{$json.caseId}}"
+            },
+            {
+              "name": "priority",
+              "value": "urgent"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "d1aa833d-6e64-410d-95a3-20de6794f419",
+      "name": "Eskalations-Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/deadlines/{{$json.id}}/escalate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "partnerId",
+              "value": "={{$json.partner.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "d5494015-4c36-4645-8b2a-2219fe10a995",
+      "name": "Eskalation persistieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verantwortlichen Partner laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verantwortlichen Partner laden": {
+      "main": [
+        [
+          {
+            "node": "SMS-Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS-Alert": {
+      "main": [
+        [
+          {
+            "node": "Eskalations-Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eskalations-Mail": {
+      "main": [
+        [
+          {
+            "node": "Eskalations-Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eskalations-Task": {
+      "main": [
+        [
+          {
+            "node": "Eskalation persistieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "139378e0-3302-413d-99aa-3fbf81705c87",
+  "id": "fristen-eskalation",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "deadline"
+    },
+    {
+      "name": "fristen"
+    }
+  ]
+}

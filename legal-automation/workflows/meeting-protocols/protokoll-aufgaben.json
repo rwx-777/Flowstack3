@@ -1,0 +1,242 @@
+{
+  "name": "Protokoll — Aufgaben",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "2ef2da2e-9da4-4dee-bc74-bc0fb54ef389",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/protocols/{{$json.protocolId}}",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "0b05b3da-0416-4451-a9dd-94cde433d6f1",
+      "name": "Protokoll laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Extrahiere alle Aktions-Items aus folgendem Protokoll. Liefere ein JSON-Array mit Feldern: title, assigneeEmail, dueDate. Protokoll: {{$json.summary}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "488e00eb-7a71-492e-86dd-9be958f0aebb",
+      "name": "Aufgaben extrahieren",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const raw = items[0].json.message?.content ?? '[]';\nlet arr;\ntry { arr = JSON.parse(raw); } catch { arr = []; }\nreturn arr.map((t) => ({ json: t }));"
+      },
+      "id": "e7a139b5-95af-466b-b077-8deeb99a2d9e",
+      "name": "Liste in Items aufteilen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/tasks",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{$json.title}}"
+            },
+            {
+              "name": "assigneeEmail",
+              "value": "={{$json.assigneeEmail}}"
+            },
+            {
+              "name": "dueDate",
+              "value": "={{$json.dueDate}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "2257687c-3d6f-4f68-a792-b05dd288f652",
+      "name": "Task anlegen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Aufgaben aus Protokoll erstellt",
+        "bodyContent": "<p>Aus dem Protokoll wurden Aufgaben angelegt.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.author.email}}",
+        "additionalFields": {}
+      },
+      "id": "0e98f45a-7205-447e-89ac-3ef31651b782",
+      "name": "Bestätigung an Autor",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Protokoll laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Protokoll laden": {
+      "main": [
+        [
+          {
+            "node": "Aufgaben extrahieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aufgaben extrahieren": {
+      "main": [
+        [
+          {
+            "node": "Liste in Items aufteilen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Liste in Items aufteilen": {
+      "main": [
+        [
+          {
+            "node": "Task anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task anlegen": {
+      "main": [
+        [
+          {
+            "node": "Bestätigung an Autor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "35e8e8ab-edb4-45c0-a218-f79ef4af8572",
+  "id": "protokoll-aufgaben",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "meeting"
+    },
+    {
+      "name": "tasks"
+    }
+  ]
+}

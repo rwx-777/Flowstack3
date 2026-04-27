@@ -1,0 +1,472 @@
+{
+  "name": "Onboarding — Hauptprozess",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Mandanten-Onboarding",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Vor- und Nachname",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "E-Mail",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Telefon",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Mandatsart",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Kurzbeschreibung",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "298f0bc9-9c6e-4779-8e80-41c4df7e957b",
+      "name": "Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ec844a88-1da0-4baf-b9fc-e7c8af4cb50c",
+              "name": "client.fullName",
+              "value": "={{$json['Vor- und Nachname']}}",
+              "type": "string"
+            },
+            {
+              "id": "0f2a59e1-876e-4583-b5c0-416de4e36816",
+              "name": "client.email",
+              "value": "={{$json['E-Mail']}}",
+              "type": "string"
+            },
+            {
+              "id": "e78153cb-6d52-4982-a08c-ebbb14ec5f69",
+              "name": "client.phone",
+              "value": "={{$json['Telefon']}}",
+              "type": "string"
+            },
+            {
+              "id": "6b61b1e0-db6c-409c-8e4b-8c76dcbc98bc",
+              "name": "case.matter",
+              "value": "={{$json['Mandatsart']}}",
+              "type": "string"
+            },
+            {
+              "id": "a98d5757-8666-48cf-87c7-2231d611b8a2",
+              "name": "case.description",
+              "value": "={{$json['Kurzbeschreibung']}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ff3afaf4-48a6-4526-a258-8280558b16a9",
+      "name": "Daten normalisieren",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/conflicts/check",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{$json.client.fullName}}"
+            },
+            {
+              "name": "email",
+              "value": "={{$json.client.email}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "290413b2-edb1-4d72-bf3a-0510250d9bf0",
+      "name": "Conflict Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f9c1e1ef-7b2d-41ee-9ba6-335f68f27832",
+              "leftValue": "={{$json.conflict}}",
+              "rightValue": "none",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "37a69bd1-da71-478c-8f75-3f1087108470",
+      "name": "Konflikt sauber?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/cases",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "matter",
+              "value": "={{$json.case.matter}}"
+            },
+            {
+              "name": "clientEmail",
+              "value": "={{$json.client.email}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "062fd8d0-ce30-4623-ac47-1447714b2518",
+      "name": "Akte anlegen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_ONBOARDING_SIGNATURE_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "22bb6375-c84a-4dd8-854f-8fa9b96db571",
+      "name": "Signatur-Subprocess",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_ONBOARDING_MARKETING_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "cefa0bd2-66a8-4705-8c43-ca6d2853df84",
+      "name": "Marketing-Consent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Willkommen bei der Kanzlei",
+        "bodyContent": "<p>Sehr geehrte/r {{$json.client.fullName}},<br/>Ihre Akte wurde unter {{$json.case.id}} angelegt.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.client.email}}",
+        "additionalFields": {}
+      },
+      "id": "4bdd89c9-4bcf-4098-a2f9-8142f57a8d7e",
+      "name": "Welcome E-Mail",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/tasks",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "Erstgespräch vorbereiten"
+            },
+            {
+              "name": "caseId",
+              "value": "={{$json.case.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "6c90c618-c5c3-4935-b3a9-a472da94bdbb",
+      "name": "Aufgabe für Sachbearbeiter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/notifications",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "partner"
+            },
+            {
+              "name": "message",
+              "value": "Konflikt bei Onboarding {{$json.client.fullName}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "6c7539fa-5e9a-47a0-b0e4-e9ae3410d39e",
+      "name": "Konflikt-Eskalation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Daten normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten normalisieren": {
+      "main": [
+        [
+          {
+            "node": "Conflict Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conflict Check": {
+      "main": [
+        [
+          {
+            "node": "Konflikt sauber?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Konflikt sauber?": {
+      "main": [
+        [
+          {
+            "node": "Akte anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Konflikt-Eskalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Akte anlegen": {
+      "main": [
+        [
+          {
+            "node": "Signatur-Subprocess",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Marketing-Consent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signatur-Subprocess": {
+      "main": [
+        [
+          {
+            "node": "Welcome E-Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome E-Mail": {
+      "main": [
+        [
+          {
+            "node": "Aufgabe für Sachbearbeiter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "45a8092c-5ad4-4d8d-b34a-d800ef1cd391",
+  "id": "onboarding-main",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "onboarding"
+    }
+  ]
+}

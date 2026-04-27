@@ -1,0 +1,302 @@
+{
+  "name": "Review — Optimiert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/30 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "297e57a2-d383-425e-bcfe-488add80e994",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/reviews?status=new&limit=50",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "c31ecec3-3fbf-4593-ba3a-4c8fc2168a67",
+      "name": "Reviews der letzten 30 Min batchen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "1d760a84-a874-48b4-aa0c-5f292d360b2a",
+      "name": "In Batches teilen",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Bestimme das Sentiment (positive/neutral/negative) und einen Score von -1..1 für: {{$json.content}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "3a94e006-5ec6-4728-b8c5-2f270988f9a3",
+      "name": "Sentiment-Scoring",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "6799f5f6-7409-469b-990e-7ed935bf3682",
+              "leftValue": "={{$json.message.content}}",
+              "rightValue": "negative",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5dae9a43-a0e0-45bf-ae11-39fcc156b441",
+      "name": "Negativ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Negative Review eingegangen",
+        "bodyContent": "<p>{{$json.content}}</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$env.PARTNER_EMAIL}}",
+        "additionalFields": {}
+      },
+      "id": "f1c30119-592c-480c-9972-39ae848a45fe",
+      "name": "Negative Bewertung — Eskalation",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/reviews/{{$json.id}}/score",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sentiment",
+              "value": "={{$json.message.content}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "1a059d89-6646-4c83-860c-675ac7b5bbb8",
+      "name": "Score persistieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Reviews der letzten 30 Min batchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviews der letzten 30 Min batchen": {
+      "main": [
+        [
+          {
+            "node": "In Batches teilen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In Batches teilen": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Sentiment-Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment-Scoring": {
+      "main": [
+        [
+          {
+            "node": "Negativ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Negativ?": {
+      "main": [
+        [
+          {
+            "node": "Negative Bewertung — Eskalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Score persistieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Negative Bewertung — Eskalation": {
+      "main": [
+        [
+          {
+            "node": "Score persistieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score persistieren": {
+      "main": [
+        [
+          {
+            "node": "In Batches teilen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "7ccd1470-e3b6-404f-9fc7-b251f31ca481",
+  "id": "review-optimized",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "review"
+    },
+    {
+      "name": "batch"
+    }
+  ]
+}

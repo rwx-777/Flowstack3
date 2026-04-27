@@ -1,0 +1,181 @@
+{
+  "name": "Dokumentenanforderung — Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "16575d83-ffaf-4902-b135-d4b3021f5720",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Klassifiziere die folgenden angeforderten Dokumente nach Pflicht/Optional und Kategorie. Eingabe: {{$json.request.docs}}. Antworte als JSON mit Feldern category, mandatory."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "27263cae-6ce6-44d2-8e7e-73feef7ca28e",
+      "name": "Dokumente klassifizieren",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1d71f9cb-c0a4-42e4-97e7-4323cae87361",
+              "name": "intake.category",
+              "value": "={{$json.message.content}}",
+              "type": "string"
+            },
+            {
+              "id": "1b273aec-d069-406f-bc37-1de87124a822",
+              "name": "intake.mandatoryCount",
+              "value": "={{$json.message.content.match(/mandatory.*true/g)?.length ?? 0}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "07531384-731e-48a3-b56d-116a9c68828b",
+      "name": "AI-Antwort parsen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/document-requests/{{$json.request.id}}/intake",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{$json.intake.category}}"
+            },
+            {
+              "name": "mandatoryCount",
+              "value": "={{$json.intake.mandatoryCount}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "a70d413e-c2a4-4958-8e7b-0a08550e2739",
+      "name": "Intake speichern",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Dokumente klassifizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dokumente klassifizieren": {
+      "main": [
+        [
+          {
+            "node": "AI-Antwort parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI-Antwort parsen": {
+      "main": [
+        [
+          {
+            "node": "Intake speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "0be4ec22-2fba-4447-9593-631484057d74",
+  "id": "doc-request-intake",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "client-lifecycle"
+    },
+    {
+      "name": "documents"
+    }
+  ]
+}

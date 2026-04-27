@@ -1,0 +1,355 @@
+{
+  "name": "Follow-up — Eskalation",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "2757575d-64da-44d9-a2c2-d067249d2f81",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86cbc6b4-8dc7-49bb-ba79-b03e25e5e0cf",
+              "name": "level",
+              "value": "={{$json.escalationCount + 1}}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a7f1888-6eae-4f22-9323-fb2018e99b01",
+      "name": "Eskalations-Stufe bestimmen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "dc2edb33-2513-48ee-b7ab-7fe14564aab0",
+                    "leftValue": "={{$json.level}}",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "1"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "7cc5c950-e641-4f42-b4e1-b05807d6186a",
+                    "leftValue": "={{$json.level}}",
+                    "rightValue": "2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "2"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "6c5539bb-2363-4713-a24c-7e19b88f4262",
+                    "leftValue": "={{$json.level}}",
+                    "rightValue": "3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": false,
+              "outputKey": "3"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "50179942-f53b-4a1e-a4e7-a47f81632c54",
+      "name": "Stufe",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Follow-up unbearbeitet",
+        "bodyContent": "<p>Bitte um Klärung.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.teamLead.email}}",
+        "additionalFields": {}
+      },
+      "id": "a088f434-ece2-4d4e-9b42-ab078572e25f",
+      "name": "Stufe 1: Teamleiter",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "ESKALATION: Follow-up",
+        "bodyContent": "<p>Zwei Reminder ohne Reaktion.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.partner.email}}",
+        "additionalFields": {}
+      },
+      "id": "83ede587-e786-47dc-b5b0-66c3e6b4d274",
+      "name": "Stufe 2: Partner",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/notifications",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "management"
+            },
+            {
+              "name": "message",
+              "value": "Kritisches Follow-up offen: {{$json.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "b6bb9a05-1674-461c-85c6-f8ec0bfc856a",
+      "name": "Stufe 3: Geschäftsführung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/follow-ups/{{$json.id}}/escalate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "level",
+              "value": "={{$json.level}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "88576e40-7a59-4aca-b0e1-57ba83a999e9",
+      "name": "Counter erhöhen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Eskalations-Stufe bestimmen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eskalations-Stufe bestimmen": {
+      "main": [
+        [
+          {
+            "node": "Stufe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stufe": {
+      "main": [
+        [
+          {
+            "node": "Stufe 1: Teamleiter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stufe 2: Partner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stufe 3: Geschäftsführung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stufe 1: Teamleiter": {
+      "main": [
+        [
+          {
+            "node": "Counter erhöhen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stufe 2: Partner": {
+      "main": [
+        [
+          {
+            "node": "Counter erhöhen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stufe 3: Geschäftsführung": {
+      "main": [
+        [
+          {
+            "node": "Counter erhöhen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "c1267b79-68d9-4893-b191-405b12f2ac67",
+  "id": "follow-up-escalation",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "deadline"
+    },
+    {
+      "name": "follow-up"
+    }
+  ]
+}

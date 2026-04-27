@@ -1,0 +1,239 @@
+{
+  "name": "Review — Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "id": "5c861577-b54d-4907-a552-2790fdeb432c",
+      "name": "Email Trigger (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "8091dcb5-2a23-482d-b5c1-cfd2f5161f28",
+              "leftValue": "={{$json.subject}}",
+              "rightValue": "Bewertung",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "64cd94fd-d56d-4fe7-9d05-ff45ef7781bd",
+      "name": "Review-Mail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Extrahiere aus folgender E-Mail die Felder source, stars (1-5), reviewerName, content. Antwort als JSON. Mail: {{$json.text}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "2583a2b3-255c-4de5-8fba-e93f72838749",
+      "name": "Quelle & Sterne erkennen",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/reviews",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{$json.message.content}}"
+            },
+            {
+              "name": "raw",
+              "value": "={{$json.text}}"
+            },
+            {
+              "name": "receivedAt",
+              "value": "={{$now}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "af126625-cb4c-4933-a9e2-5d57f12043a2",
+      "name": "Review speichern",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "27d7c0f0-7480-4069-9b57-eba50abebfa7",
+      "name": "Keine Bewertung — ignorieren",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        680,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "source": "parameter",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{$env.WF_REVIEW_RESPONSE_ID}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "197d90b3-9aac-44f5-bd20-302e97eb2aa7",
+      "name": "Antwort-Pipeline",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Review-Mail?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review-Mail?": {
+      "main": [
+        [
+          {
+            "node": "Quelle & Sterne erkennen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Bewertung — ignorieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quelle & Sterne erkennen": {
+      "main": [
+        [
+          {
+            "node": "Review speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review speichern": {
+      "main": [
+        [
+          {
+            "node": "Antwort-Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "c27f37e0-308f-4b49-9d1f-175a04671379",
+  "id": "review-intake",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "review"
+    },
+    {
+      "name": "intake"
+    }
+  ]
+}

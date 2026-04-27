@@ -1,0 +1,251 @@
+{
+  "name": "Fristen — Erinnerung",
+  "nodes": [
+    {
+      "parameters": {
+        "events": "workflow_call"
+      },
+      "id": "302959a8-16f0-4998-bf13-ec9e70f76066",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/cases/{{$json.caseId}}/owner",
+        "sendBody": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "e156945b-9cf0-48d0-9345-73a75e1c2736",
+      "name": "Sachbearbeiter ermitteln",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "ed30d892-ee8b-41d1-b99b-dc0169be3523",
+              "leftValue": "={{$json.daysUntilDue}}",
+              "rightValue": 3,
+              "operator": {
+                "type": "string",
+                "operation": "smallerEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "96e7c6b1-c77f-45c8-bad6-3db093a3cbba",
+      "name": "Frist <= 3 Tage?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Frist in 3 Tagen",
+        "bodyContent": "<p>Frist {{$json.title}} läuft am {{$json.dueDate}} ab.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.owner.email}}",
+        "additionalFields": {}
+      },
+      "id": "66aabcaf-91cb-4eb4-9b54-99309bab3811",
+      "name": "T-3 Erinnerung",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "Frist in 7 Tagen",
+        "bodyContent": "<p>Hinweis: {{$json.title}}.</p>",
+        "bodyContentType": "html",
+        "toRecipients": "={{$json.owner.email}}",
+        "additionalFields": {}
+      },
+      "id": "90fd345c-16e2-4355-aeda-43eb406c262b",
+      "name": "T-7 Erinnerung",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FLOWSTACK_API_URL}}/api/audit",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "deadline.reminder"
+            },
+            {
+              "name": "deadlineId",
+              "value": "={{$json.id}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.FLOWSTACK_API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "10570e58-a115-4bd1-be42-14cbd2ad75d6",
+      "name": "Reminder protokollieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sachbearbeiter ermitteln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sachbearbeiter ermitteln": {
+      "main": [
+        [
+          {
+            "node": "Frist <= 3 Tage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Frist <= 3 Tage?": {
+      "main": [
+        [
+          {
+            "node": "T-3 Erinnerung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "T-7 Erinnerung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "T-3 Erinnerung": {
+      "main": [
+        [
+          {
+            "node": "Reminder protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "T-7 Erinnerung": {
+      "main": [
+        [
+          {
+            "node": "Reminder protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "={{$env.WF_ERROR_HANDLER_ID}}"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "94b91c93-0e33-4f4e-83f8-0d9415ebd31b",
+  "id": "fristen-erinnerung",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "flowstack3"
+  },
+  "tags": [
+    {
+      "name": "deadline"
+    },
+    {
+      "name": "fristen"
+    }
+  ]
+}
